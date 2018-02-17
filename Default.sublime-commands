@@ -1,0 +1,13 @@
+[
+    {
+        "caption": "LLDB: Run",
+        "command": "lldb_run",
+        "args": {
+            "executable_path": "/Users/chris/dev/lldb-test/build/lldb-test"
+        }
+    },
+    {
+        "caption": "LLDB: Toggle Breakpoint",
+        "command": "lldb_toggle_breakpoint",
+    },
+]
