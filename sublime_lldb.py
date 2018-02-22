@@ -62,7 +62,6 @@ class LldbRun(sublime_plugin.WindowCommand):
             self.lldb_service.target_launch()
 
     def on_process_state_changed(self, state):
-        self.log('Process %s' % state)
         if state == 'stopped':
             thread_id = self.lldb_service.process_get_selected_thread()
             line_entry = self.lldb_service.frame_get_line_entry(thread_id, 0)
@@ -77,6 +76,8 @@ class LldbRun(sublime_plugin.WindowCommand):
 
             for view in self.window.views():
                 view.erase_regions('run_pointer')
+
+        self.log('Process %s' % state)
 
     def log(self, message):
         self.window.run_command('show_panel', {'panel': 'output.lldb'})
@@ -96,6 +97,13 @@ class LldbRun(sublime_plugin.WindowCommand):
             scope='comment',
             flags=sublime.DRAW_NO_FILL,
         )
+
+
+class LldbKill(sublime_plugin.WindowCommand):
+
+    def run(self):
+        self.lldb_service = get_lldb_service(self.window)
+        self.lldb_service.process_destroy()
 
 
 def set_breakpoints_for_view(view, breakpoints):

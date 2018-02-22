@@ -7,6 +7,10 @@
         }
     },
     {
+        "caption": "LLDB: Kill",
+        "command": "lldb_kill",
+    },
+    {
         "caption": "LLDB: Toggle Breakpoint",
         "command": "lldb_toggle_breakpoint",
     },

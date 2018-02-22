@@ -74,6 +74,10 @@ class LldbService(object):
     def process_get_selected_thread(self):
         return self.process.GetSelectedThread().GetThreadID()
 
+    def process_destroy(self):
+        result = self.process.Destroy()
+        return bool(result)
+
     def frame_get_line_entry(self, thread_id, frame_index):
         thread = self.process.GetThreadByID(thread_id)
         frame = thread.GetFrameAtIndex(frame_index)
