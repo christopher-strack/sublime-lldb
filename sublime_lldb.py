@@ -210,7 +210,7 @@ class LldbHidePrompt(sublime_plugin.TextCommand):
 
 class LldbConsoleListener(sublime_plugin.EventListener):
 
-    def on_selection_modified(self, view):
+    def on_modified(self, view):
         if view.name() == 'lldb-console':
             last_line_region = view.line(view.size())
             line = view.substr(last_line_region)
