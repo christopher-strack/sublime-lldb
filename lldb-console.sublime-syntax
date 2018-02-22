@@ -1,0 +1,12 @@
+%YAML 1.2
+---
+name: LLDB Console
+scope: lldb.console
+hidden: true
+
+contexts:
+  main:
+    - match: (\(lldb\))
+      captures:
+        1: keyword
+        2: entity.name.function

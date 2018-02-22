@@ -50,6 +50,8 @@ class LldbRun(sublime_plugin.WindowCommand):
             LLDB_SERVER_PROCESS.set_listener(self)
             self.console = self.window.create_output_panel('lldb')
             self.console.set_name('lldb-console')
+            self.console.set_syntax_file('lldb-console.sublime-syntax')
+            self.console.settings().set('line_numbers', False)
             self.lldb_service.create_target(executable_path)
             target_name = os.path.basename(executable_path)
             self.log('Current executable set to %r' % target_name)
