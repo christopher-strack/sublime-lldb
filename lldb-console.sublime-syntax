@@ -6,7 +6,7 @@ hidden: true
 
 contexts:
   main:
-    - match: (\(lldb\))
+    - match: (^\(lldb\))
       captures:
         1: keyword
         2: entity.name.function
