@@ -45,14 +45,11 @@ def get_lldb_service(window):
 class LldbRun(sublime_plugin.WindowCommand):
 
     def run(self, executable_path):
+        self.create_console()
+
         self.lldb_service = get_lldb_service(self.window)
         if self.lldb_service is not None:
             LLDB_SERVER_PROCESS.set_listener(self)
-            self.console = self.window.create_output_panel('lldb')
-            self.console.set_name('lldb-console')
-            self.console.set_syntax_file('lldb-console.sublime-syntax')
-            self.console.settings().set('line_numbers', False)
-            self.console.set_scratch(True)
             self.lldb_service.create_target(executable_path)
             target_name = os.path.basename(executable_path)
             self.log('Current executable set to %r' % target_name)
@@ -61,6 +58,13 @@ class LldbRun(sublime_plugin.WindowCommand):
                     br = self.lldb_service.target_set_breakpoint(file, line)
                     self.log(br)
             self.lldb_service.target_launch()
+
+    def create_console(self):
+        self.console = self.window.create_output_panel('lldb')
+        self.console.set_name('lldb-console')
+        self.console.set_syntax_file('lldb-console.sublime-syntax')
+        self.console.settings().set('line_numbers', False)
+        self.console.set_scratch(True)
 
     def on_process_state_changed(self, state):
         if state == 'stopped':
