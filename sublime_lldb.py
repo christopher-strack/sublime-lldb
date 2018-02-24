@@ -52,6 +52,7 @@ class LldbRun(sublime_plugin.WindowCommand):
             self.console.set_name('lldb-console')
             self.console.set_syntax_file('lldb-console.sublime-syntax')
             self.console.settings().set('line_numbers', False)
+            self.console.set_scratch(True)
             self.lldb_service.create_target(executable_path)
             target_name = os.path.basename(executable_path)
             self.log('Current executable set to %r' % target_name)
@@ -68,9 +69,6 @@ class LldbRun(sublime_plugin.WindowCommand):
             self.jump_to(line_entry)
 
             self.console.run_command('lldb_show_prompt')
-            end_pos = self.console.size()
-            self.window.focus_view(self.console)
-            self.console.sel().add(sublime.Region(end_pos, end_pos))
         elif state == 'exited':
             self.console.run_command('lldb_hide_prompt')
 
@@ -80,8 +78,9 @@ class LldbRun(sublime_plugin.WindowCommand):
         self.log('Process %s' % state)
 
     def log(self, message):
-        self.window.run_command('show_panel', {'panel': 'output.lldb'})
         self.console.run_command('lldb_append_text', {'text': message + '\n'})
+        self.window.run_command('show_panel', args={'panel': 'output.lldb'})
+        self.window.focus_view(self.window.find_output_panel('lldb'))
 
     def jump_to(self, line_entry):
         path = os.path.join(line_entry['directory'], line_entry['filename'])
@@ -190,7 +189,6 @@ class LldbAppendText(sublime_plugin.TextCommand):
         else:
             insert_point = self.view.size()
 
-        self.view.sel().clear()
         self.view.insert(edit, insert_point, text)
         self.view.show(self.view.size())
 
@@ -201,9 +199,10 @@ class LldbShowPrompt(sublime_plugin.TextCommand):
         last_line_region = self.view.line(self.view.size())
         line = self.view.substr(last_line_region)
         if line != PROMPT:
-            self.view.sel().clear()
             self.view.insert(edit, self.view.size(), PROMPT)
             self.view.show(self.view.size())
+            end_pos = self.view.size()
+            self.view.sel().add(sublime.Region(end_pos, end_pos))
 
 
 class LldbHidePrompt(sublime_plugin.TextCommand):
@@ -212,7 +211,6 @@ class LldbHidePrompt(sublime_plugin.TextCommand):
         last_line_region = self.view.line(self.view.size())
         line = self.view.substr(last_line_region)
         if line == PROMPT:
-            self.view.sel().clear()
             self.view.erase(edit, last_line_region)
 
 
@@ -238,6 +236,3 @@ class LldbConsoleListener(sublime_plugin.EventListener):
             view.run_command('lldb_append_text', {'text': 'Not a valid command\n'})
 
         view.run_command('lldb_show_prompt')
-        end_pos = view.size()
-        view.window().focus_view(view)
-        view.sel().add(sublime.Region(end_pos, end_pos))
