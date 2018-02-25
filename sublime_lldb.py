@@ -1,63 +1,68 @@
+import sys
 import os
+
+current_directory = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(current_directory)
+
 import sublime
 import sublime_plugin
 
-from .sublime_logging import get_logger
-from .lldb_rpc_server.process import LldbServerProcess
+from lldbserver.server import LldbServer
 
 
-logger = get_logger(__name__)
-
-LLDB_SERVER_PROCESS = None
+LLDB_SERVER = None
 PROMPT = '(lldb) '
 
-def load_settings():
-    return sublime.load_settings('lldb.sublime-settings')
 
+class EventListenerDispatcher(object):
 
-def plugin_unloaded():
-    global LLDB_SERVER_PROCESS
+    def __init__(self, proxy):
+        self.proxy = proxy
 
-    if LLDB_SERVER_PROCESS is not None:
-        LLDB_SERVER_PROCESS.kill()
-        LLDB_SERVER_PROCESS = None
+    def on_process_state_changed(self, state):
+        sublime.set_timeout(
+            lambda: self.proxy.on_process_state_changed(state), 0)
 
+    def on_location_changed(self, location):
+        sublime.set_timeout(
+            lambda: self.proxy.on_location_changed(location), 0)
 
-def get_lldb_service(window):
-    global LLDB_SERVER_PROCESS
+    def on_command_output(self, output):
+        sublime.set_timeout(
+            lambda: self.proxy.on_command_output(output), 0)
 
-    if LLDB_SERVER_PROCESS is None or not LLDB_SERVER_PROCESS.is_running:
-        settings = load_settings()
-
-        LLDB_SERVER_PROCESS = LldbServerProcess(
-            settings.get('python_binary', 'python'),
-            settings.get('lldb_python_lib_directory', None),
-        )
-    else:
-        logger.info('Server already running')
-
-    return window.__dict__.get(
-        'lldb-service',
-        LLDB_SERVER_PROCESS.connect(),
-    )
+    def on_error(self, output):
+        sublime.set_timeout(
+            lambda: self.proxy.on_error(output), 0)
 
 
 class LldbRun(sublime_plugin.WindowCommand):
 
     def run(self, executable_path):
+        global LLDB_SERVER
         self.create_console()
 
-        self.lldb_service = get_lldb_service(self.window)
-        if self.lldb_service is not None:
-            LLDB_SERVER_PROCESS.set_listener(self)
-            self.lldb_service.create_target(executable_path)
-            target_name = os.path.basename(executable_path)
-            self.log('Current executable set to %r' % target_name)
-            for file, breakpoints in load_breakpoints(self.window).items():
-                for line in breakpoints:
-                    br = self.lldb_service.target_set_breakpoint(file, line)
-                    self.log(br)
-            self.lldb_service.target_launch()
+        if LLDB_SERVER is not None:
+            LLDB_SERVER.kill()
+
+        settings = sublime.load_settings('lldb.sublime-settings')
+        listener = EventListenerDispatcher(self)
+        LLDB_SERVER = LldbServer(
+            settings.get('python_binary', 'python'),
+            settings.get('lldb_python_lib_directory', None),
+            listener,
+        )
+        lldb_service = LLDB_SERVER.lldb_service
+        target_name = os.path.basename(executable_path)
+        self.log('Current executable set to %r' % target_name)
+        lldb_service.create_target(executable_path)
+        self.set_breakpoints(lldb_service)
+        lldb_service.target_launch()
+
+    def set_breakpoints(self, lldb_service):
+        for file, breakpoints in load_breakpoints(self.window).items():
+            for line in breakpoints:
+                lldb_service.target_set_breakpoint(file, line)
 
     def create_console(self):
         self.console = self.window.create_output_panel('lldb')
@@ -67,22 +72,26 @@ class LldbRun(sublime_plugin.WindowCommand):
         self.console.set_scratch(True)
 
     def on_process_state_changed(self, state):
-        if state == 'stopped':
-            thread_id = self.lldb_service.process_get_selected_thread()
-            line_entry = self.lldb_service.frame_get_line_entry(thread_id, 0)
-            self.jump_to(line_entry)
-
-            self.console.run_command('lldb_show_prompt')
-        elif state == 'exited':
+        if state == 'exited':
             self.console.run_command('lldb_hide_prompt')
 
             for view in self.window.views():
                 view.erase_regions('run_pointer')
 
-        self.log('Process %s' % state)
+        self.log('Process state changed %r' % state)
+
+    def on_location_changed(self, location):
+        self.jump_to(location)
+        self.console.run_command('lldb_show_prompt')
+
+    def on_command_output(self, output):
+        self.log(output)
+
+    def on_error(self, message):
+        self.log(message)
 
     def log(self, message):
-        self.console.run_command('lldb_append_text', {'text': message + '\n'})
+        self.console.run_command('lldb_append_text', {'text': message})
         self.window.run_command('show_panel', args={'panel': 'output.lldb'})
         self.window.focus_view(self.window.find_output_panel('lldb'))
 
@@ -105,8 +114,7 @@ class LldbRun(sublime_plugin.WindowCommand):
 class LldbKill(sublime_plugin.WindowCommand):
 
     def run(self):
-        self.lldb_service = get_lldb_service(self.window)
-        self.lldb_service.process_destroy()
+        LLDB_SERVER.lldb_service.process_destroy()
 
 
 def set_breakpoints_for_view(view, breakpoints):
@@ -185,11 +193,14 @@ def find(seq, func):
 class LldbAppendText(sublime_plugin.TextCommand):
 
     def run(self, edit, text):
+        if not text.endswith('\n'):
+            text = text + '\n'
+
         last_line_region = self.view.line(self.view.size())
         line = self.view.substr(last_line_region)
         if line == PROMPT:
             row, col = self.view.rowcol(self.view.size())
-            insert_point = self.view.text_point(row - 1, 0)
+            insert_point = self.view.text_point(row, 0)
         else:
             insert_point = self.view.size()
 
@@ -232,11 +243,5 @@ class LldbConsoleListener(sublime_plugin.EventListener):
                     self.run_command(view, command)
 
     def run_command(self, view, command):
-        lldb_service = get_lldb_service(view.window())
-        result = lldb_service.handle_command(command)
-        if result is not None:
-            view.run_command('lldb_append_text', {'text': result})
-        else:
-            view.run_command('lldb_append_text', {'text': 'Not a valid command\n'})
-
+        LLDB_SERVER.lldb_service.handle_command(command)
         view.run_command('lldb_show_prompt')
