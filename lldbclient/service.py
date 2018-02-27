@@ -29,7 +29,8 @@ class LldbService(object):
                 self.debugger,
                 lldb.SBProcess.GetBroadcasterClassName(),
                 lldb.SBProcess.eBroadcastBitStateChanged |
-                lldb.SBProcess.eBroadcastBitSTDOUT,
+                lldb.SBProcess.eBroadcastBitSTDOUT |
+                lldb.SBProcess.eBroadcastBitSTDERR,
             )
             error = lldb.SBError()
             self.process = self.target.Launch(
@@ -101,12 +102,19 @@ class LldbService(object):
                     output = self.process.GetSTDOUT(lldb.UINT32_MAX)
                     if output:
                         self._notify_process_std_out(output)
+                elif event_type & lldb.SBProcess.eBroadcastBitSTDERR:
+                    output = self.process.GetSTDERR(lldb.UINT32_MAX)
+                    if output:
+                        self._notify_process_std_err(output)
 
     def _notify_process_state(self, state):
         self.listener.on_process_state_changed(state)
 
     def _notify_process_std_out(self, state):
         self.listener.on_process_std_out(state)
+
+    def _notify_process_std_err(self, state):
+        self.listener.on_process_std_err(state)
 
     def _notify_error(self, error):
         self.listener.on_error(error)

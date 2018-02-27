@@ -53,6 +53,10 @@ class LldbClient(JsonClient):
         event = {'type': 'process_std_out', 'output': output}
         self.event_queue.put(event)
 
+    def on_process_std_err(self, output):
+        event = {'type': 'process_std_err', 'output': output}
+        self.event_queue.put(event)
+
     def on_command_output(self, output):
         event = {'type': 'command_output', 'output': output}
         self.event_queue.put(event)
