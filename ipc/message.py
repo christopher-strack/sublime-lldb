@@ -17,6 +17,9 @@ def read_json(sock):
 
 
 def write_json(sock, data):
-    data = json.dumps(data)
-    sock.sendall(struct.pack('!i', len(data) + _header_size))
-    sock.sendall(data.encode())
+    try:
+        data = json.dumps(data)
+        sock.sendall(struct.pack('!i', len(data) + _header_size))
+        sock.sendall(data.encode())
+    except OSError:
+        raise ConnectionAbortedError()
