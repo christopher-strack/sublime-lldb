@@ -69,7 +69,7 @@ class LldbService(object):
 
     def frame_get_line_entry(self):
         thread = self.process.GetSelectedThread()
-        frame = thread.GetFrameAtIndex(0)
+        frame = thread.GetSelectedFrame()
         line_entry = frame.GetLineEntry()
         file_spec = line_entry.GetFileSpec()
         return {
