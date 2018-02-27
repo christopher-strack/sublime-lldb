@@ -14,9 +14,13 @@ def read_json(sock):
     if len(header) == 0:
         raise ConnectionAbortedError()
     size = struct.unpack('!i', header)[0]
-    data = sock.recv(size - _header_size)
-    if len(data) == 0:
-        raise ConnectionAbortedError()
+    data_size = size - _header_size
+    data = b''
+    while len(data) < data_size:
+        packet = sock.recv(data_size - len(data))
+        if len(packet) == 0:
+            raise ConnectionAbortedError()
+        data += packet
     return json.loads(data.decode('utf-8'))
 
 
