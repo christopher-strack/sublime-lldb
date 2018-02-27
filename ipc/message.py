@@ -5,6 +5,10 @@ import json
 _header_size = 4
 
 
+class ConnectionAbortedError(Exception):
+    pass
+
+
 def read_json(sock):
     header = sock.recv(_header_size)
     if len(header) == 0:
