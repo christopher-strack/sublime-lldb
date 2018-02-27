@@ -23,6 +23,10 @@ class EventListenerDispatcher(object):
         sublime.set_timeout(
             lambda: self.proxy.on_process_state_changed(state), 0)
 
+    def on_process_std_out(self, state):
+        sublime.set_timeout(
+            lambda: self.proxy.on_process_std_out(state), 0)
+
     def on_location_changed(self, location):
         sublime.set_timeout(
             lambda: self.proxy.on_location_changed(location), 0)
@@ -83,6 +87,9 @@ class LldbRun(sublime_plugin.WindowCommand):
     def on_location_changed(self, location):
         self.jump_to(location)
         self.console.run_command('lldb_show_prompt')
+
+    def on_process_std_out(self, output):
+        self.log(output)
 
     def on_command_output(self, output):
         self.log(output)
