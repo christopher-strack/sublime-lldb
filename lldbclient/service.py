@@ -24,8 +24,8 @@ class LldbService(object):
 
     def target_launch(self):
         if self.target:
-            listener = lldb.SBListener('listener')
-            listener.StartListeningForEventClass(
+            process_listener = lldb.SBListener('process_listener')
+            process_listener.StartListeningForEventClass(
                 self.debugger,
                 lldb.SBProcess.GetBroadcasterClassName(),
                 lldb.SBProcess.eBroadcastBitStateChanged |
@@ -34,7 +34,7 @@ class LldbService(object):
             )
             error = lldb.SBError()
             self.process = self.target.Launch(
-                listener,
+                process_listener,
                 None,
                 None,
                 None,
@@ -47,12 +47,12 @@ class LldbService(object):
             )
 
             if error.Success() and self.process:
-                self.event_thread = threading.Thread(
-                    target=self._process_listener,
-                    args=(self.process, listener),
+                self.process_event_thread = threading.Thread(
+                    target=self._handle_process_listener,
+                    args=(self.process, process_listener),
                 )
-                self.event_thread.daemon = True
-                self.event_thread.start()
+                self.process_event_thread.daemon = True
+                self.process_event_thread.start()
             else:
                 self._notify_error(
                     'Couldn\'t launch target %r' % self.executable_path)
@@ -88,7 +88,7 @@ class LldbService(object):
         else:
             self.listener.on_error(result.GetError())
 
-    def _process_listener(self, process, listener):
+    def _handle_process_listener(self, process, listener):
         while self.running:
             event = lldb.SBEvent()
             result = listener.WaitForEvent(lldb.UINT32_MAX, event)
