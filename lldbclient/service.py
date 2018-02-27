@@ -24,10 +24,15 @@ class LldbService(object):
 
     def target_launch(self):
         if self.target:
+            listener = lldb.SBListener('listener')
+            listener.StartListeningForEventClass(
+                self.debugger,
+                lldb.SBProcess.GetBroadcasterClassName(),
+                lldb.SBProcess.eBroadcastBitStateChanged,
+            )
             error = lldb.SBError()
-            process_state_listener = lldb.SBListener('process_state_listener')
             self.process = self.target.Launch(
-                process_state_listener,
+                listener,
                 None,
                 None,
                 None,
@@ -41,8 +46,8 @@ class LldbService(object):
 
             if error.Success() and self.process:
                 self.event_thread = threading.Thread(
-                    target=self._query_process_state,
-                    args=(self.process, process_state_listener),
+                    target=self._process_listener,
+                    args=(self.process, listener),
                 )
                 self.event_thread.daemon = True
                 self.event_thread.start()
@@ -81,19 +86,16 @@ class LldbService(object):
         else:
             self.listener.on_error(result.GetError())
 
-    def _query_process_state(self, process, listener):
-        event = lldb.SBEvent()
-        broadcaster = process.GetBroadcaster()
+    def _process_listener(self, process, listener):
         while self.running:
-            result = listener.WaitForEventForBroadcasterWithType(
-                lldb.UINT32_MAX,
-                broadcaster,
-                lldb.SBProcess.eBroadcastBitStateChanged,
-                event,
-            )
-            if result:
-                self._notify_process_state(
-                    process_state_names[process.GetState()])
+            event = lldb.SBEvent()
+            result = listener.WaitForEvent(1, event)
+            if result and event.IsValid():
+                event_type = event.GetType()
+                if event_type & lldb.SBProcess.eBroadcastBitStateChanged:
+                    state = lldb.SBProcess.GetStateFromEvent(event)
+                    self._notify_process_state(
+                        process_state_names[state])
 
     def _notify_process_state(self, state):
         self.listener.on_process_state_changed(state)
