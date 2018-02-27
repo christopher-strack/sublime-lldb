@@ -91,7 +91,7 @@ class LldbService(object):
     def _process_listener(self, process, listener):
         while self.running:
             event = lldb.SBEvent()
-            result = listener.WaitForEvent(1, event)
+            result = listener.WaitForEvent(lldb.UINT32_MAX, event)
             if result and event.IsValid():
                 event_type = event.GetType()
                 if event_type & lldb.SBProcess.eBroadcastBitStateChanged:
