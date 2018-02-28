@@ -124,6 +124,9 @@ class LldbRun(sublime_plugin.WindowCommand):
             flags=sublime.DRAW_NO_FILL,
         )
 
+        breakpoints = load_breakpoints(view.window()).get(view.file_name(), [])
+        set_breakpoints_for_view(view, breakpoints)
+
 
 class LldbKill(sublime_plugin.WindowCommand):
 
