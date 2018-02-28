@@ -32,6 +32,12 @@ class LldbService(object):
                 lldb.SBProcess.eBroadcastBitSTDOUT |
                 lldb.SBProcess.eBroadcastBitSTDERR,
             )
+            thread_listener = lldb.SBListener('thread_listener')
+            thread_listener.StartListeningForEventClass(
+                self.debugger,
+                lldb.SBThread.GetBroadcasterClassName(),
+                lldb.SBThread.eBroadcastBitSelectedFrameChanged,
+            )
             error = lldb.SBError()
             self.process = self.target.Launch(
                 process_listener,
@@ -53,6 +59,13 @@ class LldbService(object):
                 )
                 self.process_event_thread.daemon = True
                 self.process_event_thread.start()
+
+                self.thread_event_thread = threading.Thread(
+                    target=self._handle_thread_listener,
+                    args=(self.process, thread_listener),
+                )
+                self.thread_event_thread.daemon = True
+                self.thread_event_thread.start()
             else:
                 self._notify_error(
                     'Couldn\'t launch target %r' % self.executable_path)
@@ -106,6 +119,15 @@ class LldbService(object):
                     output = self.process.GetSTDERR(lldb.UINT32_MAX)
                     if output:
                         self._notify_process_std_err(output)
+
+    def _handle_thread_listener(self, process, listener):
+        while self.running:
+            event = lldb.SBEvent()
+            result = listener.WaitForEvent(lldb.UINT32_MAX, event)
+            if result and event.IsValid():
+                event_type = event.GetType()
+                if event_type & lldb.SBThread.eBroadcastBitSelectedFrameChanged:
+                    self._notify_location(self.frame_get_line_entry())
 
     def _notify_process_state(self, state):
         self.listener.on_process_state_changed(state)
