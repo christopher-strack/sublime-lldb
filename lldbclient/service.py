@@ -101,12 +101,13 @@ class LldbService(object):
         frame = thread.GetSelectedFrame()
         line_entry = frame.GetLineEntry()
         file_spec = line_entry.GetFileSpec()
-        return {
-            'directory': file_spec.GetDirectory(),
-            'filename': file_spec.GetFilename(),
-            'line': line_entry.GetLine(),
-            'column': line_entry.GetColumn(),
-        }
+        if file_spec:
+            return {
+                'directory': file_spec.GetDirectory(),
+                'filename': file_spec.GetFilename(),
+                'line': line_entry.GetLine(),
+                'column': line_entry.GetColumn(),
+            }
 
     def handle_command(self, input):
         result = lldb.SBCommandReturnObject()
@@ -129,10 +130,12 @@ class LldbService(object):
     def _notify_process_state(self, event):
         state = lldb.SBProcess.GetStateFromEvent(event)
         self.listener.on_process_state_changed(process_state_names[state])
-        self.listener.on_location_changed(self.frame_get_line_entry())
+        self._notify_location(event)
 
     def _notify_location(self, event):
-        self.listener.on_location_changed(self.frame_get_line_entry())
+        line_entry = self.frame_get_line_entry()
+        if line_entry:
+            self.listener.on_location_changed(line_entry)
 
     def _notify_process_std_out(self, event):
         output = self.process.GetSTDOUT(lldb.UINT32_MAX)
