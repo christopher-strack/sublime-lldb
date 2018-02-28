@@ -141,11 +141,13 @@ class LldbService(object):
     def _notify_process_std_out(self, event):
         output = self.process.GetSTDOUT(lldb.UINT32_MAX)
         if output:
+            output = output.replace('\r', '')
             self.listener.on_process_std_out(output)
 
     def _notify_process_std_err(self, event):
         output = self.process.GetSTDERR(lldb.UINT32_MAX)
         if output:
+            output = output.replace('\r', '')
             self.listener.on_process_std_err(output)
 
     def _notify_error(self, error):
