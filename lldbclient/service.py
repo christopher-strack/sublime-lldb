@@ -55,14 +55,14 @@ class LldbService(object):
             if error.Success() and self.process:
                 self.process_event_thread = threading.Thread(
                     target=self._handle_process_listener,
-                    args=(self.process, process_listener),
+                    args=(process_listener,),
                 )
                 self.process_event_thread.daemon = True
                 self.process_event_thread.start()
 
                 self.thread_event_thread = threading.Thread(
                     target=self._handle_thread_listener,
-                    args=(self.process, thread_listener),
+                    args=(thread_listener,),
                 )
                 self.thread_event_thread.daemon = True
                 self.thread_event_thread.start()
@@ -101,7 +101,7 @@ class LldbService(object):
         else:
             self.listener.on_error(result.GetError())
 
-    def _handle_process_listener(self, process, listener):
+    def _handle_process_listener(self, listener):
         while self.running:
             event = lldb.SBEvent()
             result = listener.WaitForEvent(lldb.UINT32_MAX, event)
@@ -120,7 +120,7 @@ class LldbService(object):
                     if output:
                         self._notify_process_std_err(output)
 
-    def _handle_thread_listener(self, process, listener):
+    def _handle_thread_listener(self, listener):
         while self.running:
             event = lldb.SBEvent()
             result = listener.WaitForEvent(lldb.UINT32_MAX, event)
