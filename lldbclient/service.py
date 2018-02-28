@@ -8,6 +8,7 @@ class LldbService(object):
         self.running = True
         self.debugger = lldb.SBDebugger.Create()
         self.debugger.SetAsync(True)
+        self.debugger.SetUseColor(False)
         self.target = None
         self.process = None
         self.listener = listener
