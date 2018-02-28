@@ -96,8 +96,8 @@ class LldbService(object):
                 event_type = event.GetType()
                 if event_type & lldb.SBProcess.eBroadcastBitStateChanged:
                     state = lldb.SBProcess.GetStateFromEvent(event)
-                    self._notify_process_state(
-                        process_state_names[state])
+                    self._notify_process_state(process_state_names[state])
+                    self._notify_location(self.frame_get_line_entry())
                 elif event_type & lldb.SBProcess.eBroadcastBitSTDOUT:
                     output = self.process.GetSTDOUT(lldb.UINT32_MAX)
                     if output:
@@ -109,6 +109,9 @@ class LldbService(object):
 
     def _notify_process_state(self, state):
         self.listener.on_process_state_changed(state)
+
+    def _notify_location(self, line_entry):
+        self.listener.on_location_changed(line_entry)
 
     def _notify_process_std_out(self, state):
         self.listener.on_process_std_out(state)
