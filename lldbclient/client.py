@@ -43,10 +43,12 @@ class LldbClient(JsonClient):
 
     def on_process_state_changed(self, state):
         event = {'type': 'process_state', 'state': state}
-        if state == 'stopped':
-            event['line_entry'] = self.service.frame_get_line_entry()
-        elif state == 'exited':
+        if state == 'exited':
             self._stop()
+        self.event_queue.put(event)
+
+    def on_location_changed(self, line_entry):
+        event = {'type': 'location', 'line_entry': line_entry}
         self.event_queue.put(event)
 
     def on_process_std_out(self, output):
