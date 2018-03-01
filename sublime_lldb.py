@@ -21,8 +21,8 @@ class EventListenerDispatcher(object):
         self.proxy = proxy
 
     def __getattr__(self, name):
-       return lambda arg: sublime.set_timeout(
-            lambda: getattr(self.proxy, name)(arg), 0)
+       return lambda **args: sublime.set_timeout(
+            lambda: getattr(self.proxy, name)(**args), 0)
 
 
 class LldbRun(sublime_plugin.WindowCommand):
@@ -70,8 +70,8 @@ class LldbRun(sublime_plugin.WindowCommand):
 
         self.console_log('Process state changed %r' % state)
 
-    def on_location(self, location):
-        self.jump_to(location)
+    def on_location(self, line_entry):
+        self.jump_to(line_entry)
         self.console.run_command('lldb_show_prompt')
 
     def on_process_std_out(self, output):

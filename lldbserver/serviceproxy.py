@@ -53,15 +53,7 @@ class LldbServiceProxy(object):
         )
 
     def notify_event(self, event):
-        if event.get('type') == 'process_state':
-            self.listener.on_process_state(event['state'])
-        elif event.get('type') == 'location':
-            self.listener.on_location(event['line_entry'])
-        elif event.get('type') == 'process_std_out':
-            self.listener.on_process_std_out(event['output'])
-        elif event.get('type') == 'process_std_err':
-            self.listener.on_process_std_err(event['output'])
-        elif event.get('type') == 'command_output':
-            self.listener.on_command_output(event['output'])
-        elif event.get('type') == 'error':
-            self.listener.on_error(event['message'])
+        listener_method = getattr(self.listener, 'on_' + event['type'])
+        args = event
+        del args['type']
+        listener_method(**args)
