@@ -15,33 +15,14 @@ PROMPT = '(lldb) '
 
 
 class EventListenerDispatcher(object):
+    """ Makes sure listener calls are happening on the main thread """
 
     def __init__(self, proxy):
         self.proxy = proxy
 
-    def on_process_state_changed(self, state):
-        sublime.set_timeout(
-            lambda: self.proxy.on_process_state_changed(state), 0)
-
-    def on_process_std_out(self, output):
-        sublime.set_timeout(
-            lambda: self.proxy.on_process_std_out(output), 0)
-
-    def on_process_std_err(self, output):
-        sublime.set_timeout(
-            lambda: self.proxy.on_process_std_err(output), 0)
-
-    def on_location_changed(self, location):
-        sublime.set_timeout(
-            lambda: self.proxy.on_location_changed(location), 0)
-
-    def on_command_output(self, output):
-        sublime.set_timeout(
-            lambda: self.proxy.on_command_output(output), 0)
-
-    def on_error(self, output):
-        sublime.set_timeout(
-            lambda: self.proxy.on_error(output), 0)
+    def __getattr__(self, name):
+       return lambda arg: sublime.set_timeout(
+            lambda: getattr(self.proxy, name)(arg), 0)
 
 
 class LldbRun(sublime_plugin.WindowCommand):
