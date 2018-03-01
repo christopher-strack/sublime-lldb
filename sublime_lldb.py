@@ -62,7 +62,7 @@ class LldbRun(sublime_plugin.WindowCommand):
         )
         lldb_service = LLDB_SERVER.lldb_service
         target_name = os.path.basename(executable_path)
-        self.log('Current executable set to %r' % target_name)
+        self.console_log('Current executable set to %r' % target_name)
         lldb_service.create_target(executable_path)
         self.set_breakpoints(lldb_service)
         lldb_service.target_launch()
@@ -86,25 +86,25 @@ class LldbRun(sublime_plugin.WindowCommand):
             for view in self.window.views():
                 view.erase_regions('run_pointer')
 
-        self.log('Process state changed %r' % state)
+        self.console_log('Process state changed %r' % state)
 
     def on_location_changed(self, location):
         self.jump_to(location)
         self.console.run_command('lldb_show_prompt')
 
     def on_process_std_out(self, output):
-        self.log(output)
+        self.console_log(output)
 
     def on_process_std_err(self, output):
-        self.log(output)
+        self.console_log(output)
 
     def on_command_output(self, output):
-        self.log(output)
+        self.console_log(output)
 
     def on_error(self, message):
-        self.log(message)
+        self.console_log(message)
 
-    def log(self, message):
+    def console_log(self, message):
         self.console.run_command('lldb_append_text', {'text': message})
         self.window.run_command('show_panel', args={'panel': 'output.lldb'})
         self.window.focus_view(self.window.find_output_panel('lldb'))
