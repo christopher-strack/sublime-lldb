@@ -28,6 +28,11 @@ class LldbClient(JsonClient):
         while self.running:
             self._on_message(self.receive_json())
 
+    def notify_event(self, name, **args):
+        event = {'type': name}
+        event.update(args)
+        self.event_queue.put(event)
+
     def _on_message(self, message):
         command = message.get('command', None)
         if command == 'stop':
@@ -40,32 +45,6 @@ class LldbClient(JsonClient):
     def _stop(self):
         self.service.running = False
         self.running = False
-
-    def on_process_state_changed(self, state):
-        event = {'type': 'process_state', 'state': state}
-        if state == 'exited':
-            self._stop()
-        self.event_queue.put(event)
-
-    def on_location_changed(self, line_entry):
-        event = {'type': 'location', 'line_entry': line_entry}
-        self.event_queue.put(event)
-
-    def on_process_std_out(self, output):
-        event = {'type': 'process_std_out', 'output': output}
-        self.event_queue.put(event)
-
-    def on_process_std_err(self, output):
-        event = {'type': 'process_std_err', 'output': output}
-        self.event_queue.put(event)
-
-    def on_command_output(self, output):
-        event = {'type': 'command_output', 'output': output}
-        self.event_queue.put(event)
-
-    def on_error(self, message):
-        event = {'type': 'error', 'message': message}
-        self.event_queue.put(event)
 
     def _process_event_queue(self):
         while self.running:

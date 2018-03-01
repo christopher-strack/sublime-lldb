@@ -15,33 +15,14 @@ PROMPT = '(lldb) '
 
 
 class EventListenerDispatcher(object):
+    """ Makes sure listener calls are happening on the main thread """
 
     def __init__(self, proxy):
         self.proxy = proxy
 
-    def on_process_state_changed(self, state):
-        sublime.set_timeout(
-            lambda: self.proxy.on_process_state_changed(state), 0)
-
-    def on_process_std_out(self, output):
-        sublime.set_timeout(
-            lambda: self.proxy.on_process_std_out(output), 0)
-
-    def on_process_std_err(self, output):
-        sublime.set_timeout(
-            lambda: self.proxy.on_process_std_err(output), 0)
-
-    def on_location_changed(self, location):
-        sublime.set_timeout(
-            lambda: self.proxy.on_location_changed(location), 0)
-
-    def on_command_output(self, output):
-        sublime.set_timeout(
-            lambda: self.proxy.on_command_output(output), 0)
-
-    def on_error(self, output):
-        sublime.set_timeout(
-            lambda: self.proxy.on_error(output), 0)
+    def __getattr__(self, name):
+       return lambda **args: sublime.set_timeout(
+            lambda: getattr(self.proxy, name)(**args), 0)
 
 
 class LldbRun(sublime_plugin.WindowCommand):
@@ -62,15 +43,15 @@ class LldbRun(sublime_plugin.WindowCommand):
         )
         lldb_service = LLDB_SERVER.lldb_service
         target_name = os.path.basename(executable_path)
-        self.log('Current executable set to %r' % target_name)
-        lldb_service.create_target(executable_path)
+        self.console_log('Current executable set to %r' % target_name)
+        lldb_service.create_target(executable_path=executable_path)
         self.set_breakpoints(lldb_service)
         lldb_service.target_launch()
 
     def set_breakpoints(self, lldb_service):
         for file, breakpoints in load_breakpoints(self.window).items():
             for line in breakpoints:
-                lldb_service.target_set_breakpoint(file, line)
+                lldb_service.target_set_breakpoint(file=file, line=line)
 
     def create_console(self):
         self.console = self.window.create_output_panel('lldb')
@@ -78,36 +59,35 @@ class LldbRun(sublime_plugin.WindowCommand):
         self.console.set_syntax_file('lldb-console.sublime-syntax')
         self.console.settings().set('line_numbers', False)
         self.console.set_scratch(True)
+        self.window.run_command('show_panel', args={'panel': 'output.lldb'})
 
-    def on_process_state_changed(self, state):
+    def on_process_state(self, state):
         if state == 'exited':
             self.console.run_command('lldb_hide_prompt')
 
             for view in self.window.views():
                 view.erase_regions('run_pointer')
 
-        self.log('Process state changed %r' % state)
+        self.console_log('Process state changed %r' % state)
 
-    def on_location_changed(self, location):
-        self.jump_to(location)
+    def on_location(self, line_entry):
+        self.jump_to(line_entry)
         self.console.run_command('lldb_show_prompt')
 
     def on_process_std_out(self, output):
-        self.log(output)
+        self.console_log(output)
 
     def on_process_std_err(self, output):
-        self.log(output)
+        self.console_log(output)
 
     def on_command_output(self, output):
-        self.log(output)
+        self.console_log(output)
 
     def on_error(self, message):
-        self.log(message)
+        self.console_log(message)
 
-    def log(self, message):
+    def console_log(self, message):
         self.console.run_command('lldb_append_text', {'text': message})
-        self.window.run_command('show_panel', args={'panel': 'output.lldb'})
-        self.window.focus_view(self.window.find_output_panel('lldb'))
 
     def jump_to(self, line_entry):
         path = os.path.join(line_entry['directory'], line_entry['filename'])
@@ -223,6 +203,7 @@ class LldbAppendText(sublime_plugin.TextCommand):
 
         self.view.insert(edit, insert_point, text)
         self.view.show(self.view.size())
+        self.view.window().focus_view(self.view)
 
 
 class LldbShowPrompt(sublime_plugin.TextCommand):
@@ -260,5 +241,5 @@ class LldbConsoleListener(sublime_plugin.EventListener):
                     self.run_command(view, command)
 
     def run_command(self, view, command):
-        LLDB_SERVER.lldb_service.handle_command(command)
+        LLDB_SERVER.lldb_service.handle_command(input=command)
         view.run_command('lldb_show_prompt')

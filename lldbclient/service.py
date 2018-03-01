@@ -115,9 +115,11 @@ class LldbService(object):
         interpreter = self.debugger.GetCommandInterpreter()
         interpreter.HandleCommand(input.encode('utf-8'), result)
         if result.Succeeded():
-            self.listener.on_command_output(result.GetOutput())
+            self.listener.notify_event(
+                'command_output', output=result.GetOutput())
         else:
-            self.listener.on_error(result.GetError())
+            self.listener.notify_event(
+                'error', error=result.GetError())
 
     def _handle_listener(self, listener, callbacks):
         while self.running:
@@ -129,29 +131,32 @@ class LldbService(object):
                     callback(event)
 
     def _notify_process_state(self, event):
-        state = lldb.SBProcess.GetStateFromEvent(event)
-        self.listener.on_process_state_changed(process_state_names[state])
+        state = process_state_names[lldb.SBProcess.GetStateFromEvent(event)]
+        self.listener.notify_event(
+            'process_state',
+            state=state,
+        )
         self._notify_location(event)
 
     def _notify_location(self, event):
         line_entry = self.frame_get_line_entry()
         if line_entry:
-            self.listener.on_location_changed(line_entry)
+            self.listener.notify_event('location', line_entry=line_entry)
 
     def _notify_process_std_out(self, event):
         output = self.process.GetSTDOUT(lldb.UINT32_MAX)
         if output:
             output = output.replace('\r', '')
-            self.listener.on_process_std_out(output)
+            self.listener.notify_event('process_std_out', output=output)
 
     def _notify_process_std_err(self, event):
         output = self.process.GetSTDERR(lldb.UINT32_MAX)
         if output:
             output = output.replace('\r', '')
-            self.listener.on_process_std_err(output)
+            self.listener.notify_event('process_std_err', output=output)
 
     def _notify_error(self, error):
-        self.listener.on_error(error)
+        self.listener.notify_event('error', error=error)
 
 
 process_state_names = {
