@@ -44,14 +44,14 @@ class LldbRun(sublime_plugin.WindowCommand):
         lldb_service = LLDB_SERVER.lldb_service
         target_name = os.path.basename(executable_path)
         self.console_log('Current executable set to %r' % target_name)
-        lldb_service.create_target(executable_path)
+        lldb_service.create_target(executable_path=executable_path)
         self.set_breakpoints(lldb_service)
         lldb_service.target_launch()
 
     def set_breakpoints(self, lldb_service):
         for file, breakpoints in load_breakpoints(self.window).items():
             for line in breakpoints:
-                lldb_service.target_set_breakpoint(file, line)
+                lldb_service.target_set_breakpoint(file=file, line=line)
 
     def create_console(self):
         self.console = self.window.create_output_panel('lldb')
@@ -241,5 +241,5 @@ class LldbConsoleListener(sublime_plugin.EventListener):
                     self.run_command(view, command)
 
     def run_command(self, view, command):
-        LLDB_SERVER.lldb_service.handle_command(command)
+        LLDB_SERVER.lldb_service.handle_command(input=command)
         view.run_command('lldb_show_prompt')

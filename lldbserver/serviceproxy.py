@@ -5,30 +5,13 @@ class LldbServiceProxy(object):
         self.sender = sender
         self.listener = listener
 
-    def create_target(self, executable_path):
-        self.sender({
-            'command': 'create_target',
-            'executable_path': executable_path,
-        })
+    def __getattr__(self, name):
+        def method_proxy(**args):
+            message = {'command': name}
+            message.update(args)
+            self.sender(message)
 
-    def target_launch(self):
-        self.sender({'command': 'target_launch'})
-
-    def target_set_breakpoint(self, file, line):
-        self.sender({
-            'command': 'target_set_breakpoint',
-            'file': file,
-            'line': line,
-        })
-
-    def frame_get_line_entry(self):
-        self.sender({'command': 'frame_get_line_entry'})
-
-    def handle_command(self, input):
-        self.sender({
-            'command': 'handle_command',
-            'input': input},
-        )
+        return method_proxy
 
     def notify_event(self, event):
         listener_method = getattr(self.listener, 'on_' + event['type'])
