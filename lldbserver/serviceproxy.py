@@ -14,9 +14,6 @@ class LldbServiceListener(object):
     def on_process_std_err(self, output):
         pass
 
-    def on_location_changed(self, location):
-        pass
-
     def on_command_output(self, output):
         pass
 
