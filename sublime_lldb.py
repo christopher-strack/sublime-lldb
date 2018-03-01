@@ -78,6 +78,7 @@ class LldbRun(sublime_plugin.WindowCommand):
         self.console.set_syntax_file('lldb-console.sublime-syntax')
         self.console.settings().set('line_numbers', False)
         self.console.set_scratch(True)
+        self.window.run_command('show_panel', args={'panel': 'output.lldb'})
 
     def on_process_state_changed(self, state):
         if state == 'exited':
@@ -106,8 +107,6 @@ class LldbRun(sublime_plugin.WindowCommand):
 
     def console_log(self, message):
         self.console.run_command('lldb_append_text', {'text': message})
-        self.window.run_command('show_panel', args={'panel': 'output.lldb'})
-        self.window.focus_view(self.window.find_output_panel('lldb'))
 
     def jump_to(self, line_entry):
         path = os.path.join(line_entry['directory'], line_entry['filename'])
@@ -223,6 +222,7 @@ class LldbAppendText(sublime_plugin.TextCommand):
 
         self.view.insert(edit, insert_point, text)
         self.view.show(self.view.size())
+        self.view.window().focus_view(self.view)
 
 
 class LldbShowPrompt(sublime_plugin.TextCommand):
