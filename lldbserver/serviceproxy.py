@@ -1,26 +1,4 @@
 
-
-class LldbServiceListener(object):
-
-    def on_process_state(self, state):
-        pass
-
-    def on_location(self, state):
-        pass
-
-    def on_process_std_out(self, output):
-        pass
-
-    def on_process_std_err(self, output):
-        pass
-
-    def on_command_output(self, output):
-        pass
-
-    def on_error(self, error):
-        pass
-
-
 class LldbServiceProxy(object):
 
     def __init__(self, sender, listener):
