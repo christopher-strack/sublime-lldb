@@ -130,13 +130,13 @@ class LldbService(object):
 
     def _notify_process_state(self, event):
         state = lldb.SBProcess.GetStateFromEvent(event)
-        self.listener.on_process_state_changed(process_state_names[state])
+        self.listener.on_process_state(process_state_names[state])
         self._notify_location(event)
 
     def _notify_location(self, event):
         line_entry = self.frame_get_line_entry()
         if line_entry:
-            self.listener.on_location_changed(line_entry)
+            self.listener.on_location(line_entry)
 
     def _notify_process_std_out(self, event):
         output = self.process.GetSTDOUT(lldb.UINT32_MAX)

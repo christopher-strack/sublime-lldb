@@ -2,10 +2,10 @@
 
 class LldbServiceListener(object):
 
-    def on_process_state_changed(self, state):
+    def on_process_state(self, state):
         pass
 
-    def on_location_changed(self, state):
+    def on_location(self, state):
         pass
 
     def on_process_std_out(self, output):
@@ -54,9 +54,9 @@ class LldbServiceProxy(object):
 
     def notify_event(self, event):
         if event.get('type') == 'process_state':
-            self.listener.on_process_state_changed(event['state'])
+            self.listener.on_process_state(event['state'])
         elif event.get('type') == 'location':
-            self.listener.on_location_changed(event['line_entry'])
+            self.listener.on_location(event['line_entry'])
         elif event.get('type') == 'process_std_out':
             self.listener.on_process_std_out(event['output'])
         elif event.get('type') == 'process_std_err':

@@ -61,7 +61,7 @@ class LldbRun(sublime_plugin.WindowCommand):
         self.console.set_scratch(True)
         self.window.run_command('show_panel', args={'panel': 'output.lldb'})
 
-    def on_process_state_changed(self, state):
+    def on_process_state(self, state):
         if state == 'exited':
             self.console.run_command('lldb_hide_prompt')
 
@@ -70,7 +70,7 @@ class LldbRun(sublime_plugin.WindowCommand):
 
         self.console_log('Process state changed %r' % state)
 
-    def on_location_changed(self, location):
+    def on_location(self, location):
         self.jump_to(location)
         self.console.run_command('lldb_show_prompt')
 
