@@ -189,11 +189,7 @@ class LldbIndicatorsListener(sublime_plugin.EventListener):
 
     def on_load_async(self, view):
         self._update_breakpoints(view)
-
-        run_pointer_line = TARGET_RUN_POINTER_MAP.get(view.id(), None)
-        if run_pointer_line is not None:
-            set_run_pointer(view, run_pointer_line)
-            del TARGET_RUN_POINTER_MAP[view.id()]
+        self._show_pending_run_pointer(view)
 
     def on_activated_async(self, view):
         self._update_breakpoints(view)
@@ -203,6 +199,12 @@ class LldbIndicatorsListener(sublime_plugin.EventListener):
             breakpoints = load_breakpoints(
                 view.window()).get(view.file_name(), [])
             set_breakpoints_for_view(view, breakpoints)
+
+    def _show_pending_run_pointer(self, view):
+        run_pointer_line = TARGET_RUN_POINTER_MAP.get(view.id(), None)
+        if run_pointer_line is not None:
+            set_run_pointer(view, run_pointer_line)
+            del TARGET_RUN_POINTER_MAP[view.id()]
 
 
 def find(seq, func):
