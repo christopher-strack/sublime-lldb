@@ -4,6 +4,7 @@ import subprocess
 import tempfile
 import threading
 
+from ipc.message import ConnectionClosedError
 from ipc.server import JsonServer
 
 from .serviceproxy import LldbServiceProxy
@@ -88,7 +89,7 @@ class LldbServer(object):
     def _process_listener_thread(self):
         try:
             self.server.serve_forever(self.lldb_service.notify_event)
-        except ConnectionAbortedError:
+        except ConnectionClosedError:
             print('Server stopped')
 
     def _monitor_process_server(self, process):
