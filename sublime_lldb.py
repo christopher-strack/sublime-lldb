@@ -1,5 +1,6 @@
-import sys
+import json
 import os
+import sys
 
 current_directory = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(current_directory)
@@ -12,6 +13,7 @@ from lldbserver.server import LldbServer
 
 LLDB_SERVER = None
 PROMPT = '(lldb) '
+TARGET_RUN_POINTER_MAP = {}
 
 
 class EventListenerDispatcher(object):
@@ -96,22 +98,26 @@ class LldbRun(sublime_plugin.WindowCommand):
             sublime.ENCODED_POSITION,
         )
 
-        location = view.line(view.text_point(line_entry['line'] - 1, 0))
-        view.add_regions(
-            'run_pointer',
-            regions=[location],
-            scope='comment',
-            flags=sublime.DRAW_NO_FILL,
-        )
-
-        breakpoints = load_breakpoints(view.window()).get(view.file_name(), [])
-        set_breakpoints_for_view(view, breakpoints)
+        if view.is_loading():
+            TARGET_RUN_POINTER_MAP[view.id()] = line_entry['line']
+        else:
+            set_run_pointer(view, line_entry['line'])
 
 
 class LldbKill(sublime_plugin.WindowCommand):
 
     def run(self):
         LLDB_SERVER.lldb_service.process_destroy()
+
+
+def set_run_pointer(view, line):
+    region = view.line(view.text_point(line - 1, 0))
+    view.add_regions(
+        'run_pointer',
+        regions=[region],
+        scope='comment',
+        flags=sublime.DRAW_NO_FILL,
+    )
 
 
 def set_breakpoints_for_view(view, breakpoints):
@@ -135,24 +141,32 @@ def get_breakpoints(view):
     return [view.rowcol(region.a)[0] for region in regions]
 
 
+def breakpoint_settings_path(window):
+    project_path = window.extract_variables().get('project_path')
+    return os.path.join(
+        project_path,
+        '.lldb-breakpoints',
+    )
+
+
 def save_breakpoints(view):
-    project_data = view.window().project_data()
-    settings = project_data.setdefault('settings', {})
-    sublime_lldb_settings = settings.setdefault('sublime-lldb', {})
-    breakpoints_dict = sublime_lldb_settings.setdefault('breakpoints', {})
+    breakpoints_dict = load_breakpoints(view.window())
     breakpoints = get_breakpoints(view)
     if breakpoints:
         breakpoints_dict[view.file_name()] = breakpoints
     else:
         breakpoints_dict.pop(view.file_name())
-    view.window().set_project_data(project_data)
+
+    with open(breakpoint_settings_path(view.window()), 'w') as f:
+        return json.dump(breakpoints_dict, f)
 
 
 def load_breakpoints(window):
-    project_data = window.project_data()
-    settings = project_data.get('settings', {})
-    sublime_lldb_settings = settings.get('sublime-lldb', {})
-    return sublime_lldb_settings.get('breakpoints', {})
+    try:
+        with open(breakpoint_settings_path(window), 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
 
 
 class LldbToggleBreakpoint(sublime_plugin.TextCommand):
@@ -171,20 +185,26 @@ class LldbToggleBreakpoint(sublime_plugin.TextCommand):
         save_breakpoints(self.view)
 
 
-class LldbBreakpointListener(sublime_plugin.EventListener):
+class LldbIndicatorsListener(sublime_plugin.EventListener):
 
-    def on_activated(self, view):
-        breakpoints = load_breakpoints(view.window()).get(view.file_name(), [])
-        set_breakpoints_for_view(view, breakpoints)
+    def on_load_async(self, view):
+        self._update_breakpoints(view)
+        self._show_pending_run_pointer(view)
 
+    def on_activated_async(self, view):
+        self._update_breakpoints(view)
 
+    def _update_breakpoints(self, view):
+        if view.window():
+            breakpoints = load_breakpoints(
+                view.window()).get(view.file_name(), [])
+            set_breakpoints_for_view(view, breakpoints)
 
-def find(seq, func):
-    """Return first item in sequence where f(item) == True."""
-
-    for item in seq:
-        if func(item):
-            return item
+    def _show_pending_run_pointer(self, view):
+        run_pointer_line = TARGET_RUN_POINTER_MAP.get(view.id(), None)
+        if run_pointer_line is not None:
+            set_run_pointer(view, run_pointer_line)
+            del TARGET_RUN_POINTER_MAP[view.id()]
 
 
 class LldbAppendText(sublime_plugin.TextCommand):
