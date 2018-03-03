@@ -64,7 +64,9 @@ class LldbRun(sublime_plugin.WindowCommand):
         self.window.run_command('show_panel', args={'panel': 'output.lldb'})
 
     def on_process_state(self, state):
-        if state == 'exited':
+        if state == 'stopped':
+            self.console.run_command('lldb_show_prompt')
+        elif state == 'exited':
             self.console.run_command('lldb_hide_prompt')
 
             for view in self.window.views():
@@ -74,7 +76,6 @@ class LldbRun(sublime_plugin.WindowCommand):
 
     def on_location(self, line_entry):
         self.jump_to(line_entry)
-        self.console.run_command('lldb_show_prompt')
 
     def on_process_std_out(self, output):
         self.console_log(output)
@@ -82,11 +83,9 @@ class LldbRun(sublime_plugin.WindowCommand):
     def on_process_std_err(self, output):
         self.console_log(output)
 
-    def on_command_output(self, output):
+    def on_command_finished(self, output, success):
         self.console_log(output)
-
-    def on_error(self, error):
-        self.console_log(error)
+        self.console.run_command('lldb_show_prompt')
 
     def console_log(self, message):
         self.console.run_command('lldb_append_text', {'text': message})
@@ -268,8 +267,4 @@ class LldbConsoleListener(sublime_plugin.EventListener):
                 line = view.substr(last_line_region)
                 if line.startswith(PROMPT):
                     command = line[7:]
-                    self.run_command(view, command)
-
-    def run_command(self, view, command):
-        LLDB_SERVER.lldb_service.handle_command(input=command)
-        view.run_command('lldb_show_prompt')
+                    LLDB_SERVER.lldb_service.handle_command(input=command)
