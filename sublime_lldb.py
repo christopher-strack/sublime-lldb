@@ -13,6 +13,7 @@ from lldbserver.server import LldbServer
 
 LLDB_SERVER = None
 PROMPT = '(lldb) '
+TARGET_RUN_POINTER_MAP = {}
 
 
 class EventListenerDispatcher(object):
@@ -97,19 +98,26 @@ class LldbRun(sublime_plugin.WindowCommand):
             sublime.ENCODED_POSITION,
         )
 
-        location = view.line(view.text_point(line_entry['line'] - 1, 0))
-        view.add_regions(
-            'run_pointer',
-            regions=[location],
-            scope='comment',
-            flags=sublime.DRAW_NO_FILL,
-        )
+        if view.is_loading():
+            TARGET_RUN_POINTER_MAP[view.id()] = line_entry['line']
+        else:
+            set_run_pointer(view, line_entry['line'])
 
 
 class LldbKill(sublime_plugin.WindowCommand):
 
     def run(self):
         LLDB_SERVER.lldb_service.process_destroy()
+
+
+def set_run_pointer(view, line):
+    region = view.line(view.text_point(line - 1, 0))
+    view.add_regions(
+        'run_pointer',
+        regions=[region],
+        scope='comment',
+        flags=sublime.DRAW_NO_FILL,
+    )
 
 
 def set_breakpoints_for_view(view, breakpoints):
@@ -181,6 +189,11 @@ class LldbBreakpointListener(sublime_plugin.EventListener):
 
     def on_load_async(self, view):
         self._update_breakpoints(view)
+
+        run_pointer_line = TARGET_RUN_POINTER_MAP.get(view.id(), None)
+        if run_pointer_line is not None:
+            set_run_pointer(view, run_pointer_line)
+            del TARGET_RUN_POINTER_MAP[view.id()]
 
     def on_activated_async(self, view):
         self._update_breakpoints(view)
