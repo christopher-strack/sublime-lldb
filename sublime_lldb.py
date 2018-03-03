@@ -105,9 +105,6 @@ class LldbRun(sublime_plugin.WindowCommand):
             flags=sublime.DRAW_NO_FILL,
         )
 
-        breakpoints = load_breakpoints(view.window()).get(view.file_name(), [])
-        set_breakpoints_for_view(view, breakpoints)
-
 
 class LldbKill(sublime_plugin.WindowCommand):
 
@@ -182,7 +179,13 @@ class LldbToggleBreakpoint(sublime_plugin.TextCommand):
 
 class LldbBreakpointListener(sublime_plugin.EventListener):
 
-    def on_activated(self, view):
+    def on_load_async(self, view):
+        self._update_breakpoints(view)
+
+    def on_activated_async(self, view):
+        self._update_breakpoints(view)
+
+    def _update_breakpoints(self, view):
         if view.window():
             breakpoints = load_breakpoints(
                 view.window()).get(view.file_name(), [])
