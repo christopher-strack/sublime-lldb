@@ -3,10 +3,6 @@ import socket
 from .message import read_json, write_json
 
 
-class ConnectionAbortedError(Exception):
-    pass
-
-
 class JsonClient(object):
     def __init__(self, server_address):
         self.server_address = server_address
