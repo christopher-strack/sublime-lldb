@@ -178,8 +178,18 @@ class LldbToggleBreakpoint(sublime_plugin.TextCommand):
 
         if line in breakpoints:
             breakpoints.remove(line)
+            if LLDB_SERVER is not None:
+                LLDB_SERVER.lldb_service.target_delete_breakpoint(
+                    file=self.view.file_name(),
+                    line=line,
+                )
         else:
             breakpoints.add(line)
+            if LLDB_SERVER is not None:
+                LLDB_SERVER.lldb_service.target_set_breakpoint(
+                    file=self.view.file_name(),
+                    line=line,
+                )
 
         set_breakpoints_for_view(self.view, breakpoints)
         save_breakpoints(self.view)

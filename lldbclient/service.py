@@ -1,4 +1,5 @@
 import lldb
+import os
 import threading
 
 
@@ -96,6 +97,11 @@ class LldbService(object):
         )
         if not breakpoint:
             self._notify_error('Couldn\'t set breakpoint %s:%i' % (file, line))
+
+    def target_delete_breakpoint(self, file, line):
+        file = os.path.basename(file)
+        self.handle_command(
+            'breakpoint clear -f %s -l %s' % (file, line))
 
     def frame_get_line_entry(self):
         thread = self.process.GetSelectedThread()
