@@ -207,14 +207,6 @@ class LldbIndicatorsListener(sublime_plugin.EventListener):
             del TARGET_RUN_POINTER_MAP[view.id()]
 
 
-def find(seq, func):
-    """Return first item in sequence where f(item) == True."""
-
-    for item in seq:
-        if func(item):
-            return item
-
-
 class LldbAppendText(sublime_plugin.TextCommand):
 
     def run(self, edit, text):
