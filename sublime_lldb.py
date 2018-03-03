@@ -1,5 +1,6 @@
-import sys
+import json
 import os
+import sys
 
 current_directory = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(current_directory)
@@ -135,24 +136,32 @@ def get_breakpoints(view):
     return [view.rowcol(region.a)[0] for region in regions]
 
 
+def breakpoint_settings_path(window):
+    project_path = window.extract_variables().get('project_path')
+    return os.path.join(
+        project_path,
+        '.lldb-breakpoints',
+    )
+
+
 def save_breakpoints(view):
-    project_data = view.window().project_data()
-    settings = project_data.setdefault('settings', {})
-    sublime_lldb_settings = settings.setdefault('sublime-lldb', {})
-    breakpoints_dict = sublime_lldb_settings.setdefault('breakpoints', {})
+    breakpoints_dict = load_breakpoints(view.window())
     breakpoints = get_breakpoints(view)
     if breakpoints:
         breakpoints_dict[view.file_name()] = breakpoints
     else:
         breakpoints_dict.pop(view.file_name())
-    view.window().set_project_data(project_data)
+
+    with open(breakpoint_settings_path(view.window()), 'w') as f:
+        return json.dump(breakpoints_dict, f)
 
 
 def load_breakpoints(window):
-    project_data = window.project_data()
-    settings = project_data.get('settings', {})
-    sublime_lldb_settings = settings.get('sublime-lldb', {})
-    return sublime_lldb_settings.get('breakpoints', {})
+    try:
+        with open(breakpoint_settings_path(window), 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
 
 
 class LldbToggleBreakpoint(sublime_plugin.TextCommand):
@@ -174,9 +183,10 @@ class LldbToggleBreakpoint(sublime_plugin.TextCommand):
 class LldbBreakpointListener(sublime_plugin.EventListener):
 
     def on_activated(self, view):
-        breakpoints = load_breakpoints(view.window()).get(view.file_name(), [])
-        set_breakpoints_for_view(view, breakpoints)
-
+        if view.window():
+            breakpoints = load_breakpoints(
+                view.window()).get(view.file_name(), [])
+            set_breakpoints_for_view(view, breakpoints)
 
 
 def find(seq, func):
