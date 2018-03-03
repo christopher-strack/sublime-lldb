@@ -185,7 +185,7 @@ class LldbToggleBreakpoint(sublime_plugin.TextCommand):
         save_breakpoints(self.view)
 
 
-class LldbBreakpointListener(sublime_plugin.EventListener):
+class LldbIndicatorsListener(sublime_plugin.EventListener):
 
     def on_load_async(self, view):
         self._update_breakpoints(view)
