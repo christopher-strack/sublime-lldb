@@ -122,10 +122,10 @@ class LldbService(object):
         interpreter.HandleCommand(input.encode('utf-8'), result)
         if result.Succeeded():
             self.listener.notify_event(
-                'command_output', output=result.GetOutput())
+                'command_finished', output=result.GetOutput(), success=True)
         else:
             self.listener.notify_event(
-                'error', error=result.GetError())
+                'command_finished', output=result.GetError(), success=False)
 
     def _handle_listener(self, listener, callbacks):
         while self.running:

@@ -83,12 +83,9 @@ class LldbRun(sublime_plugin.WindowCommand):
     def on_process_std_err(self, output):
         self.console_log(output)
 
-    def on_command_output(self, output):
+    def on_command_finished(self, output, success):
         self.console_log(output)
         self.console.run_command('lldb_show_prompt')
-
-    def on_error(self, error):
-        self.console_log(error)
 
     def console_log(self, message):
         self.console.run_command('lldb_append_text', {'text': message})
