@@ -52,10 +52,6 @@ class LldbServer(object):
         self.server.wait_for_connection(self.connection_timeout)
         self._run_listener_thread()
 
-    def kill(self):
-        if self.process:
-            self.process.kill()
-
     def _run_client_process(self, python_binary, lldb_python_lib_directory):
         python_path = find_lldb_python_lib_directory() \
             if lldb_python_lib_directory is None \

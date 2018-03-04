@@ -106,7 +106,10 @@ class LldbRun(sublime_plugin.WindowCommand):
 class LldbKill(sublime_plugin.WindowCommand):
 
     def run(self):
-        LLDB_SERVER.lldb_service.process_destroy()
+        LLDB_SERVER.lldb_service.process_kill()
+
+    def is_enabled(self):
+        return LLDB_SERVER is not None
 
 
 def set_run_pointer(view, line):
