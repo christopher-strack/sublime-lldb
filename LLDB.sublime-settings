@@ -6,7 +6,4 @@
     // Path to the LLDB Python plugin directory. If not set the
     // the directory is tried to be found automatically.
     // "lldb_python_lib_directory": "",
-
-    // Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL).
-    "log_level": "DEBUG",
 }
