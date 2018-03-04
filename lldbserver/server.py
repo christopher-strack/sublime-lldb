@@ -42,10 +42,16 @@ class LldbServer(object):
 
     connection_timeout = 5  # time in seconds
 
-    def __init__(self, python_binary, lldb_python_lib_directory, listener):
+    def __init__(
+        self,
+        python_binary,
+        lldb_python_lib_directory,
+        service_listener,
+    ):
         self.server_address = tempfile.mktemp()
         self.server = JsonServer(self.server_address)
-        self.lldb_service = LldbServiceProxy(self.server.send_json, listener)
+        self.lldb_service = LldbServiceProxy(
+            self.server.send_json, service_listener)
         self.process = self._run_client_process(
             python_binary, lldb_python_lib_directory,
         )
