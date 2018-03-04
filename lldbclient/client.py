@@ -1,4 +1,3 @@
-import argparse
 import threading
 
 from Queue import Queue
@@ -51,16 +50,3 @@ class LldbClient(JsonClient):
             event = self.event_queue.get()
             self.send_json(event)
             self.event_queue.task_done()
-
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('address')
-    args = parser.parse_args()
-
-    with LldbClient(args.address) as client:
-        client.listen_forever()
-
-
-if __name__ == "__main__":
-    main()
