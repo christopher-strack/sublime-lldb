@@ -34,13 +34,14 @@ class LldbRun(sublime_plugin.WindowCommand):
         self.create_console()
 
         if LLDB_SERVER is not None:
-            LLDB_SERVER.kill()
+            LLDB_SERVER.process.kill()
 
         settings = sublime.load_settings('lldb.sublime-settings')
         listener = EventListenerDispatcher(self)
         LLDB_SERVER = LldbServer(
             settings.get('python_binary', 'python'),
             settings.get('lldb_python_lib_directory', None),
+            listener,
             listener,
         )
         lldb_service = LLDB_SERVER.lldb_service
@@ -86,6 +87,10 @@ class LldbRun(sublime_plugin.WindowCommand):
     def on_command_finished(self, output, success):
         self.console_log(output)
         self.console.run_command('lldb_show_prompt')
+
+    def on_server_stopped(self):
+        global LLDB_SERVER
+        LLDB_SERVER = None
 
     def console_log(self, message):
         self.console.run_command('lldb_append_text', {'text': message})
