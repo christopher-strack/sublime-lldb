@@ -15,6 +15,6 @@ class LldbServiceProxy(object):
 
     def notify_event(self, event):
         listener_method = getattr(self.listener, 'on_' + event['type'])
-        args = event
+        args = dict(event)
         del args['type']
         listener_method(**args)
