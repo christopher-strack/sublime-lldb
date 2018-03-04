@@ -103,6 +103,9 @@ class LldbService(object):
         self.handle_command(
             'breakpoint clear -f %s -l %s' % (file, line))
 
+    def process_kill(self):
+        self.process.Kill()
+
     def frame_get_line_entry(self):
         thread = self.process.GetSelectedThread()
         frame = thread.GetSelectedFrame()

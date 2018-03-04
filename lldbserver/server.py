@@ -42,19 +42,24 @@ class LldbServer(object):
 
     connection_timeout = 5  # time in seconds
 
-    def __init__(self, python_binary, lldb_python_lib_directory, listener):
+    def __init__(
+        self,
+        python_binary,
+        lldb_python_lib_directory,
+        server_listener,
+        service_listener,
+    ):
         self.server_address = tempfile.mktemp()
         self.server = JsonServer(self.server_address)
-        self.lldb_service = LldbServiceProxy(self.server.send_json, listener)
+        self.server_listener = server_listener
+        self.lldb_service = LldbServiceProxy(
+            self.server.send_json, service_listener)
         self.process = self._run_client_process(
             python_binary, lldb_python_lib_directory,
         )
         self.server.wait_for_connection(self.connection_timeout)
         self._run_listener_thread()
-
-    def kill(self):
-        if self.process:
-            self.process.kill()
+        self.running = True
 
     def _run_client_process(self, python_binary, lldb_python_lib_directory):
         python_path = find_lldb_python_lib_directory() \
@@ -88,9 +93,15 @@ class LldbServer(object):
 
     def _process_listener_thread(self):
         try:
-            self.server.serve_forever(self.lldb_service.notify_event)
+            self.server.serve_forever(self._on_event)
         except ConnectionClosedError:
-            print('Server stopped')
+            self._on_stopped()
+
+    def _on_event(self, event):
+        self.lldb_service.notify_event(event)
+
+        if event['type'] == 'process_state' and event['state'] == 'exited':
+            self.lldb_service.stop()
 
     def _monitor_process_server(self, process):
         encoding = 'utf-8'
@@ -115,3 +126,10 @@ class LldbServer(object):
             except:
                 print('Client quit unexpectedly')
                 running = False
+
+        self._on_stopped()
+
+    def _on_stopped(self):
+        if self.running:
+            self.running = False
+            self.server_listener.on_server_stopped()
