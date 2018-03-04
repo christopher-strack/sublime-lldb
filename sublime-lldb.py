@@ -239,14 +239,30 @@ class LldbIndicatorsListener(sublime_plugin.EventListener):
             del TARGET_RUN_POINTER_MAP[view.id()]
 
 
+def last_line(view):
+    last_line_region = view.line(view.size())
+    return view.substr(last_line_region), last_line_region
+
+
+def new_line_added_to_end(view):
+    return not last_line(view)[0]
+
+
+def extract_new_command(view):
+    if new_line_added_to_end(view):
+        maybe_prompt_region = view.line(view.size() - 1)
+        line = view.substr(maybe_prompt_region)
+        if line.startswith(PROMPT):
+            return line[len(PROMPT):]
+
+
 class LldbAppendText(sublime_plugin.TextCommand):
 
     def run(self, edit, text):
         if not text.endswith('\n'):
             text = text + '\n'
 
-        last_line_region = self.view.line(self.view.size())
-        line = self.view.substr(last_line_region)
+        line, _ = last_line(self.view)
         if line == PROMPT:
             row, col = self.view.rowcol(self.view.size())
             insert_point = self.view.text_point(row, 0)
@@ -261,8 +277,7 @@ class LldbAppendText(sublime_plugin.TextCommand):
 class LldbShowPrompt(sublime_plugin.TextCommand):
 
     def run(self, edit):
-        last_line_region = self.view.line(self.view.size())
-        line = self.view.substr(last_line_region)
+        line, _ = last_line(self.view)
         if line != PROMPT:
             self.view.insert(edit, self.view.size(), PROMPT)
             self.view.show(self.view.size())
@@ -273,21 +288,15 @@ class LldbShowPrompt(sublime_plugin.TextCommand):
 class LldbHidePrompt(sublime_plugin.TextCommand):
 
     def run(self, edit):
-        last_line_region = self.view.line(self.view.size())
-        line = self.view.substr(last_line_region)
+        line, region = last_line(self.view)
         if line == PROMPT:
-            self.view.erase(edit, last_line_region)
+            self.view.erase(edit, region)
 
 
 class LldbConsoleListener(sublime_plugin.EventListener):
 
     def on_modified(self, view):
         if view.name() == 'lldb-console':
-            last_line_region = view.line(view.size())
-            line = view.substr(last_line_region)
-            if not line:
-                last_line_region = view.line(view.size() - 1)
-                line = view.substr(last_line_region)
-                if line.startswith(PROMPT):
-                    command = line[7:]
-                    LLDB_SERVER.lldb_service.handle_command(input=command)
+            command = extract_new_command(view)
+            if command is not None and LLDB_SERVER is not None:
+                LLDB_SERVER.lldb_service.handle_command(input=command)
