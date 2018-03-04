@@ -70,9 +70,9 @@ class LldbRun(sublime_plugin.WindowCommand):
 
     def on_process_state(self, state):
         if state == 'stopped':
-            self.console.run_command('lldb_show_prompt')
+            self.console.run_command('lldb_console_show_prompt')
         elif state == 'exited':
-            self.console.run_command('lldb_hide_prompt')
+            self.console.run_command('lldb_console_hide_prompt')
 
             for view in self.window.views():
                 view.erase_regions('run_pointer')
@@ -90,14 +90,14 @@ class LldbRun(sublime_plugin.WindowCommand):
 
     def on_command_finished(self, output, success):
         self.console_log(output)
-        self.console.run_command('lldb_show_prompt')
+        self.console.run_command('lldb_console_show_prompt')
 
     def on_server_stopped(self):
         global LLDB_SERVER
         LLDB_SERVER = None
 
     def console_log(self, message):
-        self.console.run_command('lldb_append_text', {'text': message})
+        self.console.run_command('lldb_console_append_text', {'text': message})
 
     def jump_to(self, line_entry):
         path = os.path.join(line_entry['directory'], line_entry['filename'])
@@ -256,7 +256,7 @@ def extract_new_command(view):
             return line[len(PROMPT):]
 
 
-class LldbAppendText(sublime_plugin.TextCommand):
+class LldbConsoleAppendText(sublime_plugin.TextCommand):
 
     def run(self, edit, text):
         if not text.endswith('\n'):
@@ -274,7 +274,7 @@ class LldbAppendText(sublime_plugin.TextCommand):
         self.view.window().focus_view(self.view)
 
 
-class LldbShowPrompt(sublime_plugin.TextCommand):
+class LldbConsoleShowPrompt(sublime_plugin.TextCommand):
 
     def run(self, edit):
         line, _ = last_line(self.view)
@@ -285,7 +285,7 @@ class LldbShowPrompt(sublime_plugin.TextCommand):
             self.view.sel().add(sublime.Region(end_pos, end_pos))
 
 
-class LldbHidePrompt(sublime_plugin.TextCommand):
+class LldbConsoleHidePrompt(sublime_plugin.TextCommand):
 
     def run(self, edit):
         line, region = last_line(self.view)
