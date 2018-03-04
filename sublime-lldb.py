@@ -266,7 +266,7 @@ class LldbConsoleAppendText(sublime_plugin.TextCommand):
 
         line, _ = last_line(self.view)
         if line == PROMPT:
-            row, col = self.view.rowcol(self.view.size())
+            row, _ = self.view.rowcol(self.view.size())
             insert_point = self.view.text_point(row, 0)
         else:
             insert_point = self.view.size()
