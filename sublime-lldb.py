@@ -272,8 +272,6 @@ class LldbConsoleAppendText(sublime_plugin.TextCommand):
             insert_point = self.view.size()
 
         self.view.insert(edit, insert_point, text)
-        self.view.show(self.view.size())
-        self.view.window().focus_view(self.view)
 
 
 class LldbConsoleShowPrompt(sublime_plugin.TextCommand):
@@ -282,9 +280,10 @@ class LldbConsoleShowPrompt(sublime_plugin.TextCommand):
         line, _ = last_line(self.view)
         if line != PROMPT:
             self.view.insert(edit, self.view.size(), PROMPT)
-            self.view.show(self.view.size())
             end_pos = self.view.size()
             self.view.sel().add(sublime.Region(end_pos, end_pos))
+            self.view.show(self.view.size())
+            self.view.window().focus_view(self.view)
 
 
 class LldbConsoleHidePrompt(sublime_plugin.TextCommand):
