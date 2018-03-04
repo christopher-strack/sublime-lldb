@@ -16,6 +16,10 @@ PROMPT = '(lldb) '
 TARGET_RUN_POINTER_MAP = {}
 
 
+def plugin_loaded():
+    sublime.set_timeout_async(set_all_breakpoints, 0)
+
+
 class EventListenerDispatcher(object):
     """ Makes sure listener calls are happening on the main thread """
 
@@ -141,6 +145,14 @@ def set_breakpoints_for_view(view, breakpoints):
         'dot',
         sublime.HIDDEN,
     )
+
+
+def set_all_breakpoints():
+    window = sublime.active_window()
+    breakpoints = load_breakpoints(window)
+
+    for view in window.views():
+        set_breakpoints_for_view(view, breakpoints.get(view.file_name(), []))
 
 
 def get_breakpoints(view):
