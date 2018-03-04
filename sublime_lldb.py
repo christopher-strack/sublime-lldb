@@ -145,6 +145,9 @@ def get_breakpoints(view):
 
 def breakpoint_settings_path(window):
     project_path = window.extract_variables().get('project_path')
+    if project_path is None:
+        project_path = os.path.expanduser('~')
+
     return os.path.join(
         project_path,
         '.lldb-breakpoints',
