@@ -219,9 +219,11 @@ class LldbToggleBreakpoint(sublime_plugin.TextCommand):
 
 class LldbIndicatorsListener(sublime_plugin.EventListener):
 
+    def on_load(self, view):
+        self._show_pending_run_pointer(view)
+
     def on_load_async(self, view):
         self._update_breakpoints(view)
-        self._show_pending_run_pointer(view)
 
     def on_activated_async(self, view):
         self._update_breakpoints(view)
