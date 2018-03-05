@@ -1,9 +1,0 @@
-{
-    // Path to a Python interpreter that is compatible with the
-    // LLDB Python plugin.
-    "python_binary": "python",
-
-    // Path to the LLDB Python plugin directory. If not set the
-    // the directory is tried to be found automatically.
-    // "lldb_python_lib_directory": "",
-}

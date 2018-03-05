@@ -33,7 +33,19 @@ class EventListenerDispatcher(object):
 
 class LldbRun(sublime_plugin.WindowCommand):
 
-    def run(self, executable_path, arguments=[], environment=None):
+    def run(self, executable_path=None, arguments=[], environment=None):
+        if executable_path is None:
+            self.window.show_input_panel(
+                'Enter executable path',
+                '',
+                lambda input: self.start_server(input, arguments, environment),
+                None,
+                None,
+            )
+        else:
+            self.start_server(executable_path, arguments, environment)
+
+    def start_server(self, executable_path, arguments, environment):
         global LLDB_SERVER
 
         self.state = None
@@ -42,7 +54,7 @@ class LldbRun(sublime_plugin.WindowCommand):
         if LLDB_SERVER is not None:
             LLDB_SERVER.process.kill()
 
-        settings = sublime.load_settings('lldb.sublime-settings')
+        settings = sublime.load_settings('sublime-lldb.sublime-settings')
         listener = EventListenerDispatcher(self)
         LLDB_SERVER = LldbServer(
             settings.get('python_binary', 'python'),
@@ -119,6 +131,28 @@ class LldbRun(sublime_plugin.WindowCommand):
             TARGET_RUN_POINTER_MAP[view.id()] = line_entry['line']
         else:
             set_run_pointer(view, line_entry['line'])
+
+
+class LldbQuickRun(sublime_plugin.WindowCommand):
+
+    def is_enabled(self):
+        settings = sublime.load_settings('sublime-lldb.sublime-settings')
+        return len(settings.get('quick_targets', [])) > 0
+
+    def run(self):
+        settings = sublime.load_settings('sublime-lldb.sublime-settings')
+        targets = settings.get('quick_targets', [])
+        target_names = [
+            target['executable_path']
+            for target in targets if target.get('executable_path', None)
+        ]
+        self.window.show_quick_panel(
+            target_names,
+            lambda index: self.run_target(targets[index])
+            if index != -1 else None)
+
+    def run_target(self, target):
+        self.window.run_command('lldb_run', args=target)
 
 
 class LldbKill(sublime_plugin.WindowCommand):
