@@ -70,9 +70,9 @@ class LldbRun(sublime_plugin.WindowCommand):
 
     def on_process_state(self, state):
         if state == 'stopped':
-            self.console.run_command('lldb_show_prompt')
+            self.console.run_command('lldb_console_show_prompt')
         elif state == 'exited':
-            self.console.run_command('lldb_hide_prompt')
+            self.console.run_command('lldb_console_hide_prompt')
 
             for view in self.window.views():
                 view.erase_regions('run_pointer')
@@ -90,14 +90,17 @@ class LldbRun(sublime_plugin.WindowCommand):
 
     def on_command_finished(self, output, success):
         self.console_log(output)
-        self.console.run_command('lldb_show_prompt')
+        self.console.run_command('lldb_console_show_prompt')
 
     def on_server_stopped(self):
         global LLDB_SERVER
         LLDB_SERVER = None
 
+    def on_error(self, error):
+        self.console_log(error)
+
     def console_log(self, message):
-        self.console.run_command('lldb_append_text', {'text': message})
+        self.console.run_command('lldb_console_append_text', {'text': message})
 
     def jump_to(self, line_entry):
         path = os.path.join(line_entry['directory'], line_entry['filename'])
@@ -219,9 +222,11 @@ class LldbToggleBreakpoint(sublime_plugin.TextCommand):
 
 class LldbIndicatorsListener(sublime_plugin.EventListener):
 
+    def on_load(self, view):
+        self._show_pending_run_pointer(view)
+
     def on_load_async(self, view):
         self._update_breakpoints(view)
-        self._show_pending_run_pointer(view)
 
     def on_activated_async(self, view):
         self._update_breakpoints(view)
@@ -239,55 +244,63 @@ class LldbIndicatorsListener(sublime_plugin.EventListener):
             del TARGET_RUN_POINTER_MAP[view.id()]
 
 
-class LldbAppendText(sublime_plugin.TextCommand):
+def last_line(view):
+    last_line_region = view.line(view.size())
+    return view.substr(last_line_region), last_line_region
+
+
+def new_line_added_to_end(view):
+    return not last_line(view)[0]
+
+
+def extract_new_command(view):
+    if new_line_added_to_end(view):
+        maybe_prompt_region = view.line(view.size() - 1)
+        line = view.substr(maybe_prompt_region)
+        if line.startswith(PROMPT):
+            return line[len(PROMPT):]
+
+
+class LldbConsoleAppendText(sublime_plugin.TextCommand):
 
     def run(self, edit, text):
         if not text.endswith('\n'):
             text = text + '\n'
 
-        last_line_region = self.view.line(self.view.size())
-        line = self.view.substr(last_line_region)
+        line, _ = last_line(self.view)
         if line == PROMPT:
-            row, col = self.view.rowcol(self.view.size())
+            row, _ = self.view.rowcol(self.view.size())
             insert_point = self.view.text_point(row, 0)
         else:
             insert_point = self.view.size()
 
         self.view.insert(edit, insert_point, text)
-        self.view.show(self.view.size())
-        self.view.window().focus_view(self.view)
 
 
-class LldbShowPrompt(sublime_plugin.TextCommand):
+class LldbConsoleShowPrompt(sublime_plugin.TextCommand):
 
     def run(self, edit):
-        last_line_region = self.view.line(self.view.size())
-        line = self.view.substr(last_line_region)
+        line, _ = last_line(self.view)
         if line != PROMPT:
             self.view.insert(edit, self.view.size(), PROMPT)
-            self.view.show(self.view.size())
             end_pos = self.view.size()
             self.view.sel().add(sublime.Region(end_pos, end_pos))
+            self.view.show(self.view.size())
+            self.view.window().focus_view(self.view)
 
 
-class LldbHidePrompt(sublime_plugin.TextCommand):
+class LldbConsoleHidePrompt(sublime_plugin.TextCommand):
 
     def run(self, edit):
-        last_line_region = self.view.line(self.view.size())
-        line = self.view.substr(last_line_region)
+        line, region = last_line(self.view)
         if line == PROMPT:
-            self.view.erase(edit, last_line_region)
+            self.view.erase(edit, region)
 
 
 class LldbConsoleListener(sublime_plugin.EventListener):
 
     def on_modified(self, view):
         if view.name() == 'lldb-console':
-            last_line_region = view.line(view.size())
-            line = view.substr(last_line_region)
-            if not line:
-                last_line_region = view.line(view.size() - 1)
-                line = view.substr(last_line_region)
-                if line.startswith(PROMPT):
-                    command = line[7:]
-                    LLDB_SERVER.lldb_service.handle_command(input=command)
+            command = extract_new_command(view)
+            if command is not None and LLDB_SERVER is not None:
+                LLDB_SERVER.lldb_service.handle_command(input=command)
