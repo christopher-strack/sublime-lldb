@@ -24,7 +24,7 @@ class LldbService(object):
             self._notify_error(
                 'Couldn\'t create target %r' % self.executable_path)
 
-    def target_launch(self):
+    def target_launch(self, arguments):
         if self.target:
             process_listener = lldb.SBListener('process_listener')
             process_listener.StartListeningForEventClass(
@@ -43,7 +43,7 @@ class LldbService(object):
             error = lldb.SBError()
             self.process = self.target.Launch(
                 process_listener,
-                None,
+                [str(arg) for arg in arguments],
                 None,
                 None,
                 None,

@@ -33,7 +33,7 @@ class EventListenerDispatcher(object):
 
 class LldbRun(sublime_plugin.WindowCommand):
 
-    def run(self, executable_path):
+    def run(self, executable_path, arguments=[]):
         global LLDB_SERVER
 
         self.state = None
@@ -55,7 +55,7 @@ class LldbRun(sublime_plugin.WindowCommand):
         self.console_log('Current executable set to %r' % target_name)
         lldb_service.create_target(executable_path=executable_path)
         self.set_breakpoints(lldb_service)
-        lldb_service.target_launch()
+        lldb_service.target_launch(arguments=arguments)
 
     def set_breakpoints(self, lldb_service):
         for file, breakpoints in load_breakpoints(self.window).items():
