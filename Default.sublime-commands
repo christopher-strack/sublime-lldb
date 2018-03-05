@@ -4,8 +4,11 @@
         "command": "lldb_run",
         "args": {
             "executable_path": "/Users/chris/dev/lldb-test/build/lldb-test",
-            "arguments": ["foo", "bar"]
-        }
+            "arguments": ["foo", "bar"],
+            "environment": {
+                "PATH": "/Users/chris",
+            }
+        },
     },
     {
         "caption": "LLDB: Kill",
