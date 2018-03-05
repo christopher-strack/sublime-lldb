@@ -8,17 +8,6 @@
         "command": "lldb_quick_run",
     },
     {
-        "caption": "LLDB: Run",
-        "command": "lldb_run",
-        "args": {
-            "executable_path": "/Users/chris/dev/lldb-test/build/lldb-test",
-            "arguments": ["foo", "bar"],
-            "environment": {
-                "PATH": "/Users/chris",
-            }
-        },
-    },
-    {
         "caption": "LLDB: Kill",
         "command": "lldb_kill",
     },
