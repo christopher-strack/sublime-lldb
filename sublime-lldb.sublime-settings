@@ -7,14 +7,18 @@
     // the directory is tried to be found automatically.
     // "lldb_python_lib_directory": "",
 
-    "quick_targets":
-    [
-        {
-            "executable_path": "/Users/chris/dev/lldb-test/build/lldb-test",
-            "arguments": ["foo", "bar"],
-            "environment": {
-                "PATH": "/Users/chris",
-            }
-        },
-    ]
+    // List of targets that are shown in the Quick Run command
+    // "quick_targets":
+    // [
+    //     {
+    //         "executable_path": "/path/to/executable",
+    //         "arguments": ["arg1", "arg2"],
+    //         "environment": {
+    //             "PATH": "/usr/local/bin",
+    //         }
+    //     },
+    //     {
+    //         "executable_path": "/path/to/another/executable",
+    //     },
+    // ]
 }
