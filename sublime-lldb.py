@@ -75,9 +75,7 @@ class LldbRun(sublime_plugin.WindowCommand):
             self.console.run_command('lldb_console_show_prompt')
         elif state == 'exited':
             self.console.run_command('lldb_console_hide_prompt')
-
-            for view in self.window.views():
-                view.erase_regions('run_pointer')
+            remove_run_pointer(self.window)
 
         self.state = state
         self.console_log('Process state changed %r' % state)
@@ -127,6 +125,11 @@ class LldbKill(sublime_plugin.WindowCommand):
 
     def is_enabled(self):
         return LLDB_SERVER is not None
+
+
+def remove_run_pointer(window):
+    for view in window.views():
+        view.erase_regions('run_pointer')
 
 
 def set_run_pointer(view, line):
