@@ -35,6 +35,8 @@ class LldbRun(sublime_plugin.WindowCommand):
 
     def run(self, executable_path):
         global LLDB_SERVER
+
+        self.state = None
         self.create_console()
 
         if LLDB_SERVER is not None:
@@ -58,7 +60,7 @@ class LldbRun(sublime_plugin.WindowCommand):
     def set_breakpoints(self, lldb_service):
         for file, breakpoints in load_breakpoints(self.window).items():
             for line in breakpoints:
-                lldb_service.target_set_breakpoint(file=file, line=line)
+                lldb_service.target_set_breakpoint(file=file, line=line + 1)
 
     def create_console(self):
         self.console = self.window.create_output_panel('lldb')
@@ -77,6 +79,7 @@ class LldbRun(sublime_plugin.WindowCommand):
             for view in self.window.views():
                 view.erase_regions('run_pointer')
 
+        self.state = state
         self.console_log('Process state changed %r' % state)
 
     def on_location(self, line_entry):
@@ -90,7 +93,9 @@ class LldbRun(sublime_plugin.WindowCommand):
 
     def on_command_finished(self, output, success):
         self.console_log(output)
-        self.console.run_command('lldb_console_show_prompt')
+
+        if self.state == 'stopped':
+            self.console.run_command('lldb_console_show_prompt')
 
     def on_server_stopped(self):
         global LLDB_SERVER
@@ -206,14 +211,14 @@ class LldbToggleBreakpoint(sublime_plugin.TextCommand):
             if LLDB_SERVER is not None:
                 LLDB_SERVER.lldb_service.target_delete_breakpoint(
                     file=self.view.file_name(),
-                    line=line,
+                    line=line + 1,
                 )
         else:
             breakpoints.add(line)
             if LLDB_SERVER is not None:
                 LLDB_SERVER.lldb_service.target_set_breakpoint(
                     file=self.view.file_name(),
-                    line=line,
+                    line=line + 1,
                 )
 
         set_breakpoints_for_view(self.view, breakpoints)
