@@ -133,6 +133,7 @@ def remove_run_pointer(window):
 
 
 def set_run_pointer(view, line):
+    remove_run_pointer(view.window())
     region = view.line(view.text_point(line - 1, 0))
     view.add_regions(
         'run_pointer',
