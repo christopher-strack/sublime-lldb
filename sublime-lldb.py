@@ -60,7 +60,7 @@ class LldbRun(sublime_plugin.WindowCommand):
     def set_breakpoints(self, lldb_service):
         for file, breakpoints in load_breakpoints(self.window).items():
             for line in breakpoints:
-                lldb_service.target_set_breakpoint(file=file, line=line)
+                lldb_service.target_set_breakpoint(file=file, line=line + 1)
 
     def create_console(self):
         self.console = self.window.create_output_panel('lldb')
@@ -211,14 +211,14 @@ class LldbToggleBreakpoint(sublime_plugin.TextCommand):
             if LLDB_SERVER is not None:
                 LLDB_SERVER.lldb_service.target_delete_breakpoint(
                     file=self.view.file_name(),
-                    line=line,
+                    line=line + 1,
                 )
         else:
             breakpoints.add(line)
             if LLDB_SERVER is not None:
                 LLDB_SERVER.lldb_service.target_set_breakpoint(
                     file=self.view.file_name(),
-                    line=line,
+                    line=line + 1,
                 )
 
         set_breakpoints_for_view(self.view, breakpoints)
