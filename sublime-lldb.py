@@ -96,6 +96,9 @@ class LldbRun(sublime_plugin.WindowCommand):
         global LLDB_SERVER
         LLDB_SERVER = None
 
+    def on_error(self, error):
+        self.console_log(error)
+
     def console_log(self, message):
         self.console.run_command('lldb_console_append_text', {'text': message})
 
