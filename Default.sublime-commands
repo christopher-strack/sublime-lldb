@@ -18,4 +18,12 @@
         "caption": "LLDB: Toggle Breakpoint",
         "command": "lldb_toggle_breakpoint",
     },
+    {
+        "caption": "LLDB: Show Console",
+        "command": "lldb_console_show",
+    },
+    {
+        "caption": "LLDB: Hide Console",
+        "command": "lldb_console_hide",
+    },
 ]
