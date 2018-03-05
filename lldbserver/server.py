@@ -65,7 +65,8 @@ class LldbServer(object):
         python_path = find_lldb_python_lib_directory() \
             if lldb_python_lib_directory is None \
             else lldb_python_lib_directory
-        env = {} if python_path is None else {'PYTHONPATH': python_path}
+        env = dict(os.environ)
+        env.update({} if python_path is None else {'PYTHONPATH': python_path})
 
         current_directory = os.path.dirname(os.path.realpath(__file__))
         process = subprocess.Popen(

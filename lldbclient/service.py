@@ -24,8 +24,11 @@ class LldbService(object):
             self._notify_error(
                 'Couldn\'t create target %r' % self.executable_path)
 
-    def target_launch(self):
+    def target_launch(self, arguments, environment):
         if self.target:
+            if environment is None:
+                environment = os.environ
+
             process_listener = lldb.SBListener('process_listener')
             process_listener.StartListeningForEventClass(
                 self.debugger,
@@ -41,18 +44,13 @@ class LldbService(object):
                 lldb.SBThread.eBroadcastBitSelectedFrameChanged,
             )
             error = lldb.SBError()
-            self.process = self.target.Launch(
-                process_listener,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                0,
-                False,
-                error,
-            )
+
+            launch_info = lldb.SBLaunchInfo([str(arg) for arg in arguments])
+            launch_info.SetEnvironmentEntries(
+                [k + "=" + v for k, v in environment.items()], False)
+            launch_info.SetListener(process_listener)
+
+            self.process = self.target.Launch(launch_info, error)
 
             if error.Success() and self.process:
                 self.process_event_thread = threading.Thread(
