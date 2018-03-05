@@ -1,5 +1,9 @@
 [
     {
+        "caption": "LLDB: Run ...",
+        "command": "lldb_run",
+    },
+    {
         "caption": "LLDB: Run",
         "command": "lldb_run",
         "args": {

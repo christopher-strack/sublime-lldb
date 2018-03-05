@@ -33,7 +33,19 @@ class EventListenerDispatcher(object):
 
 class LldbRun(sublime_plugin.WindowCommand):
 
-    def run(self, executable_path, arguments=[], environment=None):
+    def run(self, executable_path=None, arguments=[], environment=None):
+        if executable_path is None:
+            self.window.show_input_panel(
+                'Enter executable path',
+                '',
+                lambda input: self.start_server(input, arguments, environment),
+                None,
+                None,
+            )
+        else:
+            self.start_server(executable_path, arguments, environment)
+
+    def start_server(self, executable_path, arguments, environment):
         global LLDB_SERVER
 
         self.state = None
