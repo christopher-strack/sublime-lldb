@@ -43,6 +43,8 @@ class LldbService(object):
             error = lldb.SBError()
 
             launch_info = lldb.SBLaunchInfo([str(arg) for arg in arguments])
+            launch_info.SetEnvironmentEntries(
+                [key + "=" + value for key, value in os.environ.items()], False)
             launch_info.SetListener(process_listener)
 
             self.process = self.target.Launch(launch_info, error)
