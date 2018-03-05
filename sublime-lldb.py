@@ -273,6 +273,30 @@ def extract_new_command(view):
             return line[len(PROMPT):]
 
 
+class LldbConsoleShow(sublime_plugin.WindowCommand):
+
+    def is_enabled(self):
+        return self.window.find_output_panel('lldb') is not None and \
+            self.window.active_panel() is None
+
+    def run(self):
+        console = self.window.find_output_panel('lldb')
+        if console:
+            self.window.run_command('show_panel', args={'panel': 'output.lldb'})
+            console.show(console.size())
+            self.window.focus_view(console)
+
+
+class LldbConsoleHide(sublime_plugin.WindowCommand):
+
+    def is_enabled(self):
+        return self.window.find_output_panel('lldb') is not None and \
+            self.window.active_panel() == 'output.lldb'
+
+    def run(self):
+        self.window.run_command('hide_panel', args={'panel': 'output.lldb'})
+
+
 class LldbConsoleAppendText(sublime_plugin.TextCommand):
 
     def run(self, edit, text):
