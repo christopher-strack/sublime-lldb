@@ -35,6 +35,8 @@ class LldbRun(sublime_plugin.WindowCommand):
 
     def run(self, executable_path):
         global LLDB_SERVER
+
+        self.state = None
         self.create_console()
 
         if LLDB_SERVER is not None:
@@ -77,6 +79,7 @@ class LldbRun(sublime_plugin.WindowCommand):
             for view in self.window.views():
                 view.erase_regions('run_pointer')
 
+        self.state = state
         self.console_log('Process state changed %r' % state)
 
     def on_location(self, line_entry):
@@ -90,7 +93,9 @@ class LldbRun(sublime_plugin.WindowCommand):
 
     def on_command_finished(self, output, success):
         self.console_log(output)
-        self.console.run_command('lldb_console_show_prompt')
+
+        if self.state == 'stopped':
+            self.console.run_command('lldb_console_show_prompt')
 
     def on_server_stopped(self):
         global LLDB_SERVER
