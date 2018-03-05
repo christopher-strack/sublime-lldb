@@ -54,7 +54,7 @@ class LldbRun(sublime_plugin.WindowCommand):
         if LLDB_SERVER is not None:
             LLDB_SERVER.process.kill()
 
-        settings = sublime.load_settings('lldb.sublime-settings')
+        settings = sublime.load_settings('sublime-lldb.sublime-settings')
         listener = EventListenerDispatcher(self)
         LLDB_SERVER = LldbServer(
             settings.get('python_binary', 'python'),
