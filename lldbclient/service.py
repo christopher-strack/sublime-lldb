@@ -123,10 +123,16 @@ class LldbService(object):
         interpreter.HandleCommand(input.encode('utf-8'), result)
         if result.Succeeded():
             self.listener.notify_event(
-                'command_finished', output=result.GetOutput(), success=True)
+                'command_finished',
+                output=result.GetOutput().decode('unicode-escape'),
+                success=True,
+            )
         else:
             self.listener.notify_event(
-                'command_finished', output=result.GetError(), success=False)
+                'command_finished',
+                output=result.GetError().decode('unicode-escape'),
+                success=False,
+            )
 
     def _handle_listener(self, listener, callbacks):
         while self.running:
@@ -154,13 +160,19 @@ class LldbService(object):
         output = self.process.GetSTDOUT(lldb.UINT32_MAX)
         if output:
             output = output.replace('\r', '')
-            self.listener.notify_event('process_std_out', output=output)
+            self.listener.notify_event(
+                'process_std_out',
+                output=output.decode('unicode-escape'),
+            )
 
     def _notify_process_std_err(self, event):
         output = self.process.GetSTDERR(lldb.UINT32_MAX)
         if output:
             output = output.replace('\r', '')
-            self.listener.notify_event('process_std_err', output=output)
+            self.listener.notify_event(
+                'process_std_err',
+                output=output.decode('unicode-escape'),
+            )
 
     def _notify_error(self, error):
         self.listener.notify_event('error', error=error)
