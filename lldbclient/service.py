@@ -144,12 +144,13 @@ class LldbService(object):
                     callback(event)
 
     def _notify_process_state(self, event):
-        state = process_state_names[lldb.SBProcess.GetStateFromEvent(event)]
+        state = lldb.SBProcess.GetStateFromEvent(event)
         self.listener.notify_event(
             'process_state',
-            state=state,
+            state=process_state_names[state],
         )
-        self._notify_location(event)
+        if lldb.SBProcess.GetStateFromEvent(event) == lldb.eStateStopped:
+            self._notify_location(event)
 
     def _notify_location(self, event):
         line_entry = self.frame_get_line_entry()
