@@ -295,16 +295,10 @@ def last_line(view):
     return view.substr(last_line_region), last_line_region
 
 
-def new_line_added_to_end(view):
-    return not last_line(view)[0]
-
-
-def extract_new_command(view):
-    if new_line_added_to_end(view):
-        maybe_prompt_region = view.line(view.size() - 1)
-        line = view.substr(maybe_prompt_region)
-        if line.startswith(PROMPT):
-            return line[len(PROMPT):]
+def extract_command(view):
+    line, _ = last_line(view)
+    if line.startswith(PROMPT):
+        return line[len(PROMPT):]
 
 
 class LldbConsoleShow(sublime_plugin.WindowCommand):
@@ -369,8 +363,12 @@ class LldbConsoleHidePrompt(sublime_plugin.TextCommand):
 
 class LldbConsoleListener(sublime_plugin.EventListener):
 
-    def on_modified(self, view):
+    def on_text_command(self, view, command_name, args):
         if view.name() == 'lldb-console':
-            command = extract_new_command(view)
-            if command is not None and LLDB_SERVER is not None:
-                LLDB_SERVER.lldb_service.handle_command(input=command)
+            if command_name == 'insert' and args['characters'] == '\n':
+                self.on_console_command_entered(view)
+
+    def on_console_command_entered(self, view):
+        command = extract_command(view)
+        if command is not None and LLDB_SERVER is not None:
+            LLDB_SERVER.lldb_service.handle_command(input=command)
