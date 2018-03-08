@@ -301,6 +301,22 @@ def extract_command(view):
         return line[len(PROMPT):]
 
 
+def selection_inside_input_region(view, proper_subset):
+    line, input_region = last_line(view)
+    if line.startswith(PROMPT):
+        input_region.a += len(PROMPT)
+
+        if not proper_subset:
+            input_region.a += 1
+            input_region.b += 1
+
+        for region in view.sel():
+            if not input_region.contains(region):
+                return False
+        return True
+    return False
+
+
 class LldbConsoleShow(sublime_plugin.WindowCommand):
 
     def is_enabled(self):
@@ -361,12 +377,26 @@ class LldbConsoleHidePrompt(sublime_plugin.TextCommand):
             self.view.erase(edit, region)
 
 
+
 class LldbConsoleListener(sublime_plugin.EventListener):
 
     def on_text_command(self, view, command_name, args):
+        result = None
+
         if view.name() == 'lldb-console':
+            if command_name in ('left_delete', 'delete_word'):
+                if not selection_inside_input_region(view, proper_subset=False):
+                    result = 'noop'
+            if command_name == 'cut':
+                if not selection_inside_input_region(view, proper_subset=True):
+                    result = 'noop'
+                else:
+                    if all([r.empty() for r in view.sel()]):
+                        result = 'noop'
             if command_name == 'insert' and args['characters'] == '\n':
                 self.on_console_command_entered(view)
+
+        return result
 
     def on_console_command_entered(self, view):
         command = extract_command(view)
