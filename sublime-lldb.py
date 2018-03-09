@@ -2,6 +2,8 @@ import json
 import os
 import sys
 
+from contextlib import contextmanager
+
 current_directory = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(current_directory)
 
@@ -83,6 +85,7 @@ class LldbRun(sublime_plugin.WindowCommand):
         self.console.set_syntax_file('lldb-console.sublime-syntax')
         self.console.settings().set('line_numbers', False)
         self.console.set_scratch(True)
+        self.console.set_read_only(True)
         self.window.run_command('show_panel', args={'panel': 'output.lldb'})
 
     def on_process_state(self, state):
@@ -341,6 +344,14 @@ class LldbConsoleHide(sublime_plugin.WindowCommand):
         self.window.run_command('hide_panel', args={'panel': 'output.lldb'})
 
 
+@contextmanager
+def writeable_view(view):
+    read_only = view.is_read_only()
+    view.set_read_only(False)
+    yield
+    view.set_read_only(read_only)
+
+
 class LldbConsoleAppendText(sublime_plugin.TextCommand):
 
     def run(self, edit, text):
@@ -354,7 +365,8 @@ class LldbConsoleAppendText(sublime_plugin.TextCommand):
         else:
             insert_point = self.view.size()
 
-        self.view.insert(edit, insert_point, text)
+        with writeable_view(self.view):
+            self.view.insert(edit, insert_point, text)
 
 
 class LldbConsoleShowPrompt(sublime_plugin.TextCommand):
@@ -362,6 +374,7 @@ class LldbConsoleShowPrompt(sublime_plugin.TextCommand):
     def run(self, edit):
         line, _ = last_line(self.view)
         if line != PROMPT:
+            self.view.set_read_only(False)
             self.view.insert(edit, self.view.size(), PROMPT)
             end_pos = self.view.size()
             self.view.sel().add(sublime.Region(end_pos, end_pos))
@@ -375,10 +388,16 @@ class LldbConsoleHidePrompt(sublime_plugin.TextCommand):
         line, region = last_line(self.view)
         if line == PROMPT:
             self.view.erase(edit, region)
-
+            self.view.set_read_only(True)
 
 
 class LldbConsoleListener(sublime_plugin.EventListener):
+
+    def on_selection_modified(self, view):
+        if view.name() == 'lldb-console':
+            line, _ = last_line(view)
+            view.set_read_only(
+                not selection_inside_input_region(view, proper_subset=True))
 
     def on_text_command(self, view, command_name, args):
         result = None
