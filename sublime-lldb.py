@@ -406,13 +406,13 @@ class LldbConsoleListener(sublime_plugin.EventListener):
             if command_name in ('left_delete', 'delete_word'):
                 if not selection_inside_input_region(view, proper_subset=False):
                     result = 'noop'
-            if command_name == 'cut':
+            elif command_name == 'cut':
                 if not selection_inside_input_region(view, proper_subset=True):
                     result = 'noop'
                 else:
                     if all([r.empty() for r in view.sel()]):
                         result = 'noop'
-            if command_name == 'insert' and args['characters'] == '\n':
+            elif command_name == 'insert' and args['characters'] == '\n':
                 self.on_console_command_entered(view)
 
         return result
