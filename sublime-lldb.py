@@ -421,3 +421,12 @@ class LldbConsoleListener(sublime_plugin.EventListener):
         command = extract_command(view)
         if command is not None and LLDB_SERVER is not None:
             LLDB_SERVER.lldb_service.handle_command(input=command)
+
+    def on_query_completions(self, view, prefix, locations):
+        if view.name() == 'lldb-console':
+            command = extract_command(view)
+            if command is not None and LLDB_SERVER is not None:
+                _, col = view.rowcol(view.sel()[0].a)
+                matches = LLDB_SERVER.lldb_service.handle_completion(
+                    current_line=command, cursor_pos=col - len(PROMPT))
+                return [(m, m) for m in matches]

@@ -134,6 +134,16 @@ class LldbService(object):
                 success=False,
             )
 
+    def handle_completion(self, current_line, cursor_pos):
+        matches = lldb.SBStringList()
+        interpreter = self.debugger.GetCommandInterpreter()
+        interpreter.HandleCompletion(
+            current_line.encode('utf-8'), cursor_pos, 0, 1000, matches)
+        self.listener.notify_event(
+            'completion',
+            matches=[m.decode('unicode-escape') for m in matches],
+        )
+
     def _handle_listener(self, listener, callbacks):
         while self.running:
             event = lldb.SBEvent()
