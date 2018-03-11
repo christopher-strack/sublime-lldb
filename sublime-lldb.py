@@ -370,6 +370,19 @@ class LldbConsoleAppendText(sublime_plugin.TextCommand):
             self.view.insert(edit, insert_point, text)
 
 
+class LldbConsoleSetInput(sublime_plugin.TextCommand):
+
+    def run(self, edit, command):
+        line, region = last_line(self.view)
+        if line.startswith(PROMPT):
+            region.a += len(PROMPT)
+            with writeable_view(self.view):
+                self.view.replace(edit, region, command)
+                self.view.sel().clear()
+                self.view.sel().add(self.view.size())
+                self.view.show(self.view.size())
+
+
 class LldbConsoleShowPrompt(sublime_plugin.TextCommand):
 
     def run(self, edit):
@@ -390,6 +403,37 @@ class LldbConsoleHidePrompt(sublime_plugin.TextCommand):
         if line == PROMPT:
             self.view.erase(edit, region)
             self.view.set_read_only(True)
+
+
+class CommandHistory(object):
+
+    def __init__(self):
+        self._commands = []
+        self._position = None
+
+    def next(self):
+        if len(self._commands) > 0:
+            self._position = max(self._position -1, 0)
+            return self._commands[self._position]
+
+    def previous(self):
+        if len(self._commands) > 0:
+            if self._position is None:
+                self._position = 0
+            else:
+                self._position = min(
+                    self._position + 1,
+                    len(self._commands) - 1,
+                )
+
+            return self._commands[self._position]
+
+    def insert(self, command):
+        self._commands.insert(0, command)
+        self._position = None
+
+
+command_history = CommandHistory()
 
 
 class LldbConsoleListener(sublime_plugin.EventListener):
@@ -415,6 +459,9 @@ class LldbConsoleListener(sublime_plugin.EventListener):
                         result = 'noop'
             elif command_name == 'insert' and args['characters'] == '\n':
                 self.on_console_command_entered(view)
+            elif command_name == 'move' and args['by'] == 'lines':
+                self.on_command_history(view, not args['forward'])
+                result = 'noop'
 
         return result
 
@@ -422,6 +469,7 @@ class LldbConsoleListener(sublime_plugin.EventListener):
         command = extract_command(view)
         if command is not None and lldb_server is not None:
             lldb_server.lldb_service.handle_command(input=command)
+            command_history.insert(command)
 
     def on_query_completions(self, view, prefix, locations):
         if view.name() == 'lldb-console':
@@ -431,3 +479,13 @@ class LldbConsoleListener(sublime_plugin.EventListener):
                 matches = lldb_server.lldb_service.handle_completion(
                     current_line=command, cursor_pos=col - len(PROMPT))
                 return [(m, m) for m in matches]
+
+    def on_command_history(self, view, previous):
+        command = command_history.previous() if previous \
+            else command_history.next()
+
+        if command is not None:
+            view.run_command(
+                'lldb_console_set_input',
+                args={'command': command},
+            )
