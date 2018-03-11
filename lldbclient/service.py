@@ -122,15 +122,23 @@ class LldbService(object):
         interpreter = self.debugger.GetCommandInterpreter()
         interpreter.HandleCommand(input.encode('utf-8'), result)
         if result.Succeeded():
+            output = result.GetOutput()
+            if output is not None:
+                output = output.decode('unicode-escape')
+
             self.listener.notify_event(
                 'command_finished',
-                output=result.GetOutput().decode('unicode-escape'),
+                output=output,
                 success=True,
             )
         else:
+            error = result.GetError()
+            if error is not None:
+                error = error.decode('unicode-escape')
+
             self.listener.notify_event(
                 'command_finished',
-                output=result.GetError().decode('unicode-escape'),
+                output=error,
                 success=False,
             )
 
