@@ -38,15 +38,38 @@ class LldbRun(sublime_plugin.WindowCommand):
 
     def run(self, executable_path=None, arguments=[], environment=None):
         if executable_path is None:
-            self.window.show_input_panel(
-                'Enter executable path',
-                '',
-                lambda input: self.start_server(input, arguments, environment),
-                None,
-                None,
-            )
+            settings = sublime.load_settings('sublime-lldb.sublime-settings')
+            targets = settings.get('quick_targets', [])
+            if len(targets) > 0:
+                self.list_targets(targets)
+            else:
+                self.show_executable_path_input(arguments, environment)
         else:
             self.start_server(executable_path, arguments, environment)
+
+    def list_targets(self, targets):
+        target_executables = [
+            target['executable_path']
+            for target in targets if target.get('executable_path', None)
+        ] + ['Enter executable path ...']
+
+        def on_done(index):
+            if index != -1:
+                if index < len(targets):
+                    self.start_server(target_executables[index], [], None)
+                else:
+                    self.show_executable_path_input([], None)
+
+        self.window.show_quick_panel(target_executables, on_done)
+
+    def show_executable_path_input(self, arguments, environment):
+        self.window.show_input_panel(
+            'Enter executable path',
+            '',
+            lambda input: self.start_server(input, arguments, environment),
+            None,
+            None,
+        )
 
     def start_server(self, executable_path, arguments, environment):
         global lldb_server
