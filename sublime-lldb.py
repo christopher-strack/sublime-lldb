@@ -45,7 +45,7 @@ class LldbRun(sublime_plugin.WindowCommand):
             else:
                 self.show_executable_path_input(arguments, environment)
         else:
-            self.start_server(executable_path, arguments, environment)
+            self.run_target(executable_path, arguments, environment)
 
     def list_targets(self, targets):
         target_executables = [
@@ -56,7 +56,7 @@ class LldbRun(sublime_plugin.WindowCommand):
         def on_done(index):
             if index != -1:
                 if index < len(targets):
-                    self.start_server(target_executables[index], [], None)
+                    self.run_target(target_executables[index], [], None)
                 else:
                     self.show_executable_path_input([], None)
 
@@ -66,12 +66,12 @@ class LldbRun(sublime_plugin.WindowCommand):
         self.window.show_input_panel(
             'Enter executable path',
             '',
-            lambda input: self.start_server(input, arguments, environment),
+            lambda input: self.run_target(input, arguments, environment),
             None,
             None,
         )
 
-    def start_server(self, executable_path, arguments, environment):
+    def run_target(self, executable_path, arguments, environment):
         global lldb_server
 
         self.state = None
