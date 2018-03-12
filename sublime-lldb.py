@@ -38,14 +38,17 @@ class LldbRun(sublime_plugin.WindowCommand):
 
     def run(self, executable_path=None, arguments=[], environment=None):
         if executable_path is None:
-            settings = sublime.load_settings('sublime-lldb.sublime-settings')
-            targets = settings.get('quick_targets', [])
+            targets = self.quick_targets()
             if len(targets) > 0:
                 self.list_targets(targets)
             else:
                 self.show_executable_path_input(arguments, environment)
         else:
             self.run_target(executable_path, arguments, environment)
+
+    def quick_targets(self):
+        settings = sublime.load_settings('sublime-lldb.sublime-settings')
+        return settings.get('quick_targets', [])
 
     def list_targets(self, targets):
         target_executables = [
