@@ -13,9 +13,10 @@ import sublime_plugin
 from lldbserver.server import LldbServer
 
 
-LLDB_SERVER = None
 PROMPT = '(lldb) '
-TARGET_RUN_POINTER_MAP = {}
+
+lldb_server = None
+target_run_pointer_map = {}
 
 
 def plugin_loaded():
@@ -48,23 +49,23 @@ class LldbRun(sublime_plugin.WindowCommand):
             self.start_server(executable_path, arguments, environment)
 
     def start_server(self, executable_path, arguments, environment):
-        global LLDB_SERVER
+        global lldb_server
 
         self.state = None
         self.create_console()
 
-        if LLDB_SERVER is not None:
-            LLDB_SERVER.process.kill()
+        if lldb_server is not None:
+            lldb_server.process.kill()
 
         settings = sublime.load_settings('sublime-lldb.sublime-settings')
         listener = EventListenerDispatcher(self)
-        LLDB_SERVER = LldbServer(
+        lldb_server = LldbServer(
             settings.get('python_binary', 'python'),
             settings.get('lldb_python_lib_directory', None),
             listener,
             listener,
         )
-        lldb_service = LLDB_SERVER.lldb_service
+        lldb_service = lldb_server.lldb_service
         target_name = os.path.basename(executable_path)
         self.console_log('Current executable set to %r' % target_name)
         lldb_service.create_target(executable_path=executable_path)
@@ -114,8 +115,8 @@ class LldbRun(sublime_plugin.WindowCommand):
             self.console.run_command('lldb_console_show_prompt')
 
     def on_server_stopped(self):
-        global LLDB_SERVER
-        LLDB_SERVER = None
+        global lldb_server
+        lldb_server = None
 
     def on_error(self, error):
         self.console_log(error)
@@ -131,7 +132,7 @@ class LldbRun(sublime_plugin.WindowCommand):
         )
 
         if view.is_loading():
-            TARGET_RUN_POINTER_MAP[view.id()] = line_entry['line']
+            target_run_pointer_map[view.id()] = line_entry['line']
         else:
             set_run_pointer(view, line_entry['line'])
 
@@ -161,10 +162,10 @@ class LldbQuickRun(sublime_plugin.WindowCommand):
 class LldbKill(sublime_plugin.WindowCommand):
 
     def run(self):
-        LLDB_SERVER.lldb_service.process_kill()
+        lldb_server.lldb_service.process_kill()
 
     def is_enabled(self):
-        return LLDB_SERVER is not None
+        return lldb_server is not None
 
 
 def remove_run_pointer(window):
@@ -252,15 +253,15 @@ class LldbToggleBreakpoint(sublime_plugin.TextCommand):
 
         if line in breakpoints:
             breakpoints.remove(line)
-            if LLDB_SERVER is not None:
-                LLDB_SERVER.lldb_service.target_delete_breakpoint(
+            if lldb_server is not None:
+                lldb_server.lldb_service.target_delete_breakpoint(
                     file=self.view.file_name(),
                     line=line + 1,
                 )
         else:
             breakpoints.add(line)
-            if LLDB_SERVER is not None:
-                LLDB_SERVER.lldb_service.target_set_breakpoint(
+            if lldb_server is not None:
+                lldb_server.lldb_service.target_set_breakpoint(
                     file=self.view.file_name(),
                     line=line + 1,
                 )
@@ -287,10 +288,10 @@ class LldbIndicatorsListener(sublime_plugin.EventListener):
             set_breakpoints_for_view(view, breakpoints)
 
     def _show_pending_run_pointer(self, view):
-        run_pointer_line = TARGET_RUN_POINTER_MAP.get(view.id(), None)
+        run_pointer_line = target_run_pointer_map.get(view.id(), None)
         if run_pointer_line is not None:
             set_run_pointer(view, run_pointer_line)
-            del TARGET_RUN_POINTER_MAP[view.id()]
+            del target_run_pointer_map[view.id()]
 
 
 def last_line(view):
@@ -369,6 +370,19 @@ class LldbConsoleAppendText(sublime_plugin.TextCommand):
             self.view.insert(edit, insert_point, text)
 
 
+class LldbConsoleSetInput(sublime_plugin.TextCommand):
+
+    def run(self, edit, command):
+        line, region = last_line(self.view)
+        if line.startswith(PROMPT):
+            region.a += len(PROMPT)
+            with writeable_view(self.view):
+                self.view.replace(edit, region, command)
+                self.view.sel().clear()
+                self.view.sel().add(self.view.size())
+                self.view.show(self.view.size())
+
+
 class LldbConsoleShowPrompt(sublime_plugin.TextCommand):
 
     def run(self, edit):
@@ -391,6 +405,37 @@ class LldbConsoleHidePrompt(sublime_plugin.TextCommand):
             self.view.set_read_only(True)
 
 
+class CommandHistory(object):
+
+    def __init__(self):
+        self._commands = []
+        self._position = None
+
+    def next(self):
+        if len(self._commands) > 0:
+            self._position = max(self._position -1, 0)
+            return self._commands[self._position]
+
+    def previous(self):
+        if len(self._commands) > 0:
+            if self._position is None:
+                self._position = 0
+            else:
+                self._position = min(
+                    self._position + 1,
+                    len(self._commands) - 1,
+                )
+
+            return self._commands[self._position]
+
+    def insert(self, command):
+        self._commands.insert(0, command)
+        self._position = None
+
+
+command_history = CommandHistory()
+
+
 class LldbConsoleListener(sublime_plugin.EventListener):
 
     def on_selection_modified(self, view):
@@ -406,27 +451,41 @@ class LldbConsoleListener(sublime_plugin.EventListener):
             if command_name in ('left_delete', 'delete_word'):
                 if not selection_inside_input_region(view, proper_subset=False):
                     result = 'noop'
-            if command_name == 'cut':
+            elif command_name == 'cut':
                 if not selection_inside_input_region(view, proper_subset=True):
                     result = 'noop'
                 else:
                     if all([r.empty() for r in view.sel()]):
                         result = 'noop'
-            if command_name == 'insert' and args['characters'] == '\n':
+            elif command_name == 'insert' and args['characters'] == '\n':
                 self.on_console_command_entered(view)
+            elif command_name == 'move' and args['by'] == 'lines':
+                self.on_command_history(view, not args['forward'])
+                result = 'noop'
 
         return result
 
     def on_console_command_entered(self, view):
         command = extract_command(view)
-        if command is not None and LLDB_SERVER is not None:
-            LLDB_SERVER.lldb_service.handle_command(input=command)
+        if command is not None and lldb_server is not None:
+            lldb_server.lldb_service.handle_command(input=command)
+            command_history.insert(command)
 
     def on_query_completions(self, view, prefix, locations):
         if view.name() == 'lldb-console':
             command = extract_command(view)
-            if command is not None and LLDB_SERVER is not None:
+            if command is not None and lldb_server is not None:
                 _, col = view.rowcol(view.sel()[0].a)
-                matches = LLDB_SERVER.lldb_service.handle_completion(
+                matches = lldb_server.lldb_service.handle_completion(
                     current_line=command, cursor_pos=col - len(PROMPT))
                 return [(m, m) for m in matches]
+
+    def on_command_history(self, view, previous):
+        command = command_history.previous() if previous \
+            else command_history.next()
+
+        if command is not None:
+            view.run_command(
+                'lldb_console_set_input',
+                args={'command': command},
+            )
