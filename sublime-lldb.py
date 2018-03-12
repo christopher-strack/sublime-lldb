@@ -38,7 +38,7 @@ class LldbRun(sublime_plugin.WindowCommand):
 
     def run(self, executable_path=None, arguments=[], environment=None):
         if executable_path is None:
-            targets = self.quick_targets()
+            targets = self.targets()
             if len(targets) > 0:
                 self.list_targets(targets)
             else:
@@ -46,11 +46,11 @@ class LldbRun(sublime_plugin.WindowCommand):
         else:
             self.run_target(executable_path, arguments, environment)
 
-    def quick_targets(self):
+    def targets(self):
         project_data = self.window.project_data()
         settings = project_data.get('settings', {})
         lldb_settings = settings.get('sublime-lldb', {})
-        return lldb_settings.get('quick_targets', [])
+        return lldb_settings.get('targets', [])
 
     def list_targets(self, targets):
         target_executables = [
