@@ -160,28 +160,6 @@ class LldbRun(sublime_plugin.WindowCommand):
             set_run_pointer(view, line_entry['line'])
 
 
-class LldbQuickRun(sublime_plugin.WindowCommand):
-
-    def is_enabled(self):
-        settings = sublime.load_settings('sublime-lldb.sublime-settings')
-        return len(settings.get('quick_targets', [])) > 0
-
-    def run(self):
-        settings = sublime.load_settings('sublime-lldb.sublime-settings')
-        targets = settings.get('quick_targets', [])
-        target_names = [
-            target['executable_path']
-            for target in targets if target.get('executable_path', None)
-        ]
-        self.window.show_quick_panel(
-            target_names,
-            lambda index: self.run_target(targets[index])
-            if index != -1 else None)
-
-    def run_target(self, target):
-        self.window.run_command('lldb_run', args=target)
-
-
 class LldbKill(sublime_plugin.WindowCommand):
 
     def run(self):

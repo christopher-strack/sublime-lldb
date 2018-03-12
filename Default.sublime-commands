@@ -4,10 +4,6 @@
         "command": "lldb_run",
     },
     {
-        "caption": "LLDB: Quick Run",
-        "command": "lldb_quick_run",
-    },
-    {
         "caption": "LLDB: Kill",
         "command": "lldb_kill",
     },
