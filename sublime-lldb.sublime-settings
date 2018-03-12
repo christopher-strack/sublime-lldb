@@ -6,19 +6,4 @@
     // Path to the LLDB Python plugin directory. If not set the
     // the directory is tried to be found automatically.
     // "lldb_python_lib_directory": "",
-
-    // List of targets that are shown in the Quick Run command
-    // "quick_targets":
-    // [
-    //     {
-    //         "executable_path": "/path/to/executable",
-    //         "arguments": ["arg1", "arg2"],
-    //         "environment": {
-    //             "PATH": "/usr/local/bin",
-    //         }
-    //     },
-    //     {
-    //         "executable_path": "/path/to/another/executable",
-    //     },
-    // ]
 }
