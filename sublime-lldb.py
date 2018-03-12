@@ -47,8 +47,10 @@ class LldbRun(sublime_plugin.WindowCommand):
             self.run_target(executable_path, arguments, environment)
 
     def quick_targets(self):
-        settings = sublime.load_settings('sublime-lldb.sublime-settings')
-        return settings.get('quick_targets', [])
+        project_data = self.window.project_data()
+        settings = project_data.get('settings', {})
+        lldb_settings = settings.get('sublime-lldb', {})
+        return lldb_settings.get('quick_targets', [])
 
     def list_targets(self, targets):
         target_executables = [
