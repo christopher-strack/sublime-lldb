@@ -61,7 +61,11 @@ class LldbRun(sublime_plugin.WindowCommand):
         def on_done(index):
             if index != -1:
                 if index < len(targets):
-                    self.run_target(target_executables[index], [], None)
+                    self.run_target(
+                        targets[index]['executable_path'],
+                        targets[index].get('arguments', []),
+                        targets[index].get('environment', None),
+                    )
                 else:
                     self.show_executable_path_input([], None)
 
