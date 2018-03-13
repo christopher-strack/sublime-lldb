@@ -250,6 +250,29 @@ def load_breakpoints(window):
         return {}
 
 
+class LldbListBreakpoints(sublime_plugin.WindowCommand):
+
+    def run(self):
+        breakpoints = load_breakpoints(self.window)
+        if breakpoints:
+            unfolded_breakpoints = [
+                '%s:%i' % (path, line + 1)
+                for path, lines in breakpoints.items() for line in lines
+            ]
+
+            self.window.show_quick_panel(
+                unfolded_breakpoints,
+                lambda index: None,
+                0,
+                0,
+                lambda index:
+                    self.on_breakpoint_selected(unfolded_breakpoints[index])
+            )
+
+    def on_breakpoint_selected(self, path):
+        self.window.open_file(path, sublime.ENCODED_POSITION)
+
+
 class LldbToggleBreakpoint(sublime_plugin.TextCommand):
 
     def run(self, edit):
