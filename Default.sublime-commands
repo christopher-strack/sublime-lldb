@@ -16,6 +16,10 @@
         "command": "lldb_toggle_breakpoint",
     },
     {
+        "caption": "LLDB: Clear Breakpoints",
+        "command": "lldb_clear_breakpoints",
+    },
+    {
         "caption": "LLDB: Show Console",
         "command": "lldb_console_show",
     },
