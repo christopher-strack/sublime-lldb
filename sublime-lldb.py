@@ -204,8 +204,8 @@ def set_breakpoints_for_view(view, breakpoints):
     view.add_regions(
         'breakpoint',
         regions,
-        'breakpoint',
-        'dot',
+        'keyword',
+        'Packages/sublime-lldb/icons/breakpoint.png',
         sublime.HIDDEN,
     )
 
