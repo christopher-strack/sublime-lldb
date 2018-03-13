@@ -8,8 +8,16 @@
         "command": "lldb_kill",
     },
     {
+        "caption": "LLDB: List Breakpoints",
+        "command": "lldb_list_breakpoints",
+    },
+    {
         "caption": "LLDB: Toggle Breakpoint",
         "command": "lldb_toggle_breakpoint",
+    },
+    {
+        "caption": "LLDB: Clear Breakpoints",
+        "command": "lldb_clear_breakpoints",
     },
     {
         "caption": "LLDB: Show Console",
