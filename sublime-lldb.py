@@ -405,7 +405,8 @@ class LldbConsoleAppendText(sublime_plugin.TextCommand):
             text = text + '\n'
 
         line, _ = last_line(self.view)
-        if line == PROMPT:
+        prompt_visible = line.startswith(PROMPT)
+        if prompt_visible:
             row, _ = self.view.rowcol(self.view.size())
             insert_point = self.view.text_point(row, 0)
         else:
@@ -413,6 +414,9 @@ class LldbConsoleAppendText(sublime_plugin.TextCommand):
 
         with writeable_view(self.view):
             self.view.insert(edit, insert_point, text)
+
+        if prompt_visible:
+            self.view.show(self.view.size())
 
 
 class LldbConsoleSetInput(sublime_plugin.TextCommand):
