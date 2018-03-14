@@ -39,7 +39,7 @@ class LldbServiceProxy(object):
         with self.completion_condition:
             self.completion_condition.wait_for(
                 lambda: self.completion_result is not None, timeout)
-            matches = list(self.completion_result)
+            matches = list(self.completion_result) if self.completion_result else []
             self.completion_result = None
         print("Completion finished in", time.time() - now, "seconds")
 
