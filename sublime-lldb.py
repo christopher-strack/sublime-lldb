@@ -508,7 +508,8 @@ class LldbConsoleListener(sublime_plugin.EventListener):
                         result = 'noop'
             elif command_name == 'insert' and args['characters'] == '\n':
                 self.on_console_command_entered(view)
-            elif command_name == 'move' and args['by'] == 'lines':
+            elif command_name == 'move' and args['by'] == 'lines' \
+                    and not view.is_auto_complete_visible():
                 self.on_command_history(view, not args['forward'])
                 result = 'noop'
 
